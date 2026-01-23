@@ -2,6 +2,7 @@ import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import { GRID_BORDER_SIZE, GRID_TOTAL_CELL_SIZE } from "./constants";
 import type { Word } from "./types";
+import { calculateWordBounds, calculateWordPositions } from "./word-geometry";
 
 interface DraggableWordProps {
 	word: Word;
@@ -32,6 +33,11 @@ export function DraggableWord({
 		transformOrigin: "0 0",
 	};
 
+	const positions = calculateWordPositions(word);
+	const bounds = calculateWordBounds(word);
+	const width = (bounds.maxCol - bounds.minCol + 1) * GRID_TOTAL_CELL_SIZE - 1;
+	const height = (bounds.maxRow - bounds.minRow + 1) * GRID_TOTAL_CELL_SIZE - 1;
+
 	return (
 		<div
 			ref={setNodeRef}
@@ -51,46 +57,35 @@ export function DraggableWord({
 			style={{
 				top: `${word.row * GRID_TOTAL_CELL_SIZE + GRID_BORDER_SIZE}px`,
 				left: `${word.col * GRID_TOTAL_CELL_SIZE + GRID_BORDER_SIZE}px`,
-				width:
-					word.direction === "horizontal"
-						? `${word.text.length * GRID_TOTAL_CELL_SIZE - 1}px`
-						: "40px",
-				height:
-					word.direction === "vertical"
-						? `${word.text.length * GRID_TOTAL_CELL_SIZE - 1}px`
-						: "40px",
+				width: `${width}px`,
+				height: `${height}px`,
 				...style,
 			}}
 		>
-			<div
-				className={`h-full flex ${
-					word.direction === "horizontal" ? "flex-row" : "flex-col"
-				}`}
-			>
-				{word.text.split("").map((letter, idx) => (
+			{/* Render each letter at its absolute position */}
+			{positions.map((pos, idx) => {
+				const offsetRow = pos.row - word.row;
+				const offsetCol = pos.col - word.col;
+
+				return (
 					<div
 						key={`${word.id}-${idx}`}
-						className={`flex items-center justify-center font-bold text-lg ${
-							letter === " " ? "bg-black" : "bg-white"
+						className={`absolute flex items-center justify-center font-bold text-lg ${
+							pos.char === " " ? "bg-black" : "bg-white"
 						}`}
 						style={{
+							top: `${offsetRow * GRID_TOTAL_CELL_SIZE}px`,
+							left: `${offsetCol * GRID_TOTAL_CELL_SIZE}px`,
 							width: "40px",
 							height: "40px",
 							border: "1px solid #000",
-							marginRight:
-								word.direction === "horizontal" && idx < word.text.length - 1
-									? "1px"
-									: "0",
-							marginBottom:
-								word.direction === "vertical" && idx < word.text.length - 1
-									? "1px"
-									: "0",
 						}}
 					>
-						{letter === " " ? "" : letter}
+						{pos.char === " " ? "" : pos.char}
 					</div>
-				))}
-			</div>
+				);
+			})}
+			{/* Delete button */}
 			{isSelected && (
 				<button
 					type="button"
@@ -98,7 +93,7 @@ export function DraggableWord({
 						e.stopPropagation();
 						onDelete();
 					}}
-					className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full text-xs hover:bg-red-600"
+					className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full text-xs hover:bg-red-600 z-10"
 				>
 					×
 				</button>

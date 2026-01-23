@@ -1,5 +1,6 @@
 import { useState } from "react";
-import type { Cell, Direction, Word } from "./types";
+import type { BendPoint, Cell, Direction, Word } from "./types";
+import { calculateWordPositions, wouldWordOverflow } from "./word-geometry";
 
 interface UseCrosswordWordsParams {
 	rows: number;
@@ -166,6 +167,121 @@ export function useCrosswordWords({
 		}
 	};
 
+	const addBend = (
+		wordId: string,
+		letterIndex: number,
+		direction: Direction,
+	) => {
+		const word = words.find((w) => w.id === wordId);
+		if (!word) return;
+
+		const newBends: BendPoint[] = [...(word.bends || [])];
+
+		// Remove any existing bend at this index
+		const existingIndex = newBends.findIndex((b) => b.index === letterIndex);
+		if (existingIndex >= 0) {
+			newBends.splice(existingIndex, 1);
+		}
+
+		// Add new bend
+		newBends.push({ index: letterIndex, direction });
+		newBends.sort((a, b) => a.index - b.index);
+
+		const updatedWord = { ...word, bends: newBends };
+
+		// Check if word would overflow
+		if (wouldWordOverflow(updatedWord, rows, cols)) {
+			return; // Don't apply bend if it would overflow
+		}
+
+		// Clear old cells and place with new bend
+		setCells((prev) => {
+			const newCells = prev.map((row) => row.map((cell) => ({ ...cell })));
+
+			// Clear old position
+			for (let r = 0; r < rows; r++) {
+				for (let c = 0; c < cols; c++) {
+					if (newCells[r][c].wordId === wordId) {
+						newCells[r][c].value = "";
+						newCells[r][c].wordId = undefined;
+						newCells[r][c].isBlack = false;
+					}
+				}
+			}
+
+			// Place with bends
+			const positions = calculateWordPositions(updatedWord);
+			for (const pos of positions) {
+				if (pos.row >= 0 && pos.row < rows && pos.col >= 0 && pos.col < cols) {
+					const char = pos.char;
+					if (char === " ") {
+						newCells[pos.row][pos.col].isBlack = true;
+						newCells[pos.row][pos.col].value = "";
+						newCells[pos.row][pos.col].wordId = wordId;
+					} else {
+						if (!newCells[pos.row][pos.col].isBlack) {
+							newCells[pos.row][pos.col].value = char;
+							newCells[pos.row][pos.col].wordId = wordId;
+						}
+					}
+				}
+			}
+
+			return newCells;
+		});
+
+		setWords((prev) => prev.map((w) => (w.id === wordId ? updatedWord : w)));
+	};
+
+	const removeBend = (wordId: string, letterIndex: number) => {
+		const word = words.find((w) => w.id === wordId);
+		if (!word || !word.bends) return;
+
+		const newBends = word.bends.filter((b) => b.index !== letterIndex);
+		const updatedWord = {
+			...word,
+			bends: newBends.length > 0 ? newBends : undefined,
+		};
+
+		// Clear and replace
+		setCells((prev) => {
+			const newCells = prev.map((row) => row.map((cell) => ({ ...cell })));
+
+			// Clear old position
+			for (let r = 0; r < rows; r++) {
+				for (let c = 0; c < cols; c++) {
+					if (newCells[r][c].wordId === wordId) {
+						newCells[r][c].value = "";
+						newCells[r][c].wordId = undefined;
+						newCells[r][c].isBlack = false;
+					}
+				}
+			}
+
+			// Place with remaining bends
+			const positions = calculateWordPositions(updatedWord);
+			for (const pos of positions) {
+				if (pos.row >= 0 && pos.row < rows && pos.col >= 0 && pos.col < cols) {
+					const char = pos.char;
+					if (char === " ") {
+						newCells[pos.row][pos.col].isBlack = true;
+						newCells[pos.row][pos.col].value = "";
+						newCells[pos.row][pos.col].wordId = wordId;
+					} else {
+						if (!newCells[pos.row][pos.col].isBlack) {
+							newCells[pos.row][pos.col].value = char;
+							newCells[pos.row][pos.col].wordId = wordId;
+						}
+					}
+				}
+			}
+
+			return newCells;
+		});
+
+		setWords((prev) => prev.map((w) => (w.id === wordId ? updatedWord : w)));
+	};
+
 	return {
 		words,
 		selectedWord,
@@ -173,5 +289,7 @@ export function useCrosswordWords({
 		placeWord,
 		moveWord,
 		deleteWord,
+		addBend,
+		removeBend,
 	};
 }

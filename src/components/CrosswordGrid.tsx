@@ -7,6 +7,7 @@ import {
 	useSensors,
 } from "@dnd-kit/core";
 import { useState } from "react";
+import { BendControls } from "./crossword/bend-controls";
 import { GRID_TOTAL_CELL_SIZE } from "./crossword/constants";
 import { ControlPanel } from "./crossword/control-panel";
 import { GridDisplay } from "./crossword/grid-display";
@@ -125,6 +126,26 @@ export function CrosswordGrid({
 					selectedWordId={wordManager.selectedWord}
 					onSelectWord={wordManager.setSelectedWord}
 				/>
+
+				{wordManager.selectedWord && (
+					<BendControls
+						word={
+							wordManager.words.find(
+								(w) => w.id === wordManager.selectedWord,
+							) as NonNullable<(typeof wordManager.words)[0]>
+						}
+						onAddBend={(index, dir) => {
+							if (wordManager.selectedWord) {
+								wordManager.addBend(wordManager.selectedWord, index, dir);
+							}
+						}}
+						onRemoveBend={(index) => {
+							if (wordManager.selectedWord) {
+								wordManager.removeBend(wordManager.selectedWord, index);
+							}
+						}}
+					/>
+				)}
 
 				<GridDisplay
 					rows={grid.rows}
