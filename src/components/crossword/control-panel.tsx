@@ -13,6 +13,7 @@ interface ControlPanelProps {
 	words: Word[];
 	selectedWordId: string | null;
 	onSelectWord: (wordId: string | null) => void;
+	onDeleteWord: (wordId: string) => void;
 }
 
 export function ControlPanel({
@@ -25,6 +26,7 @@ export function ControlPanel({
 	words,
 	selectedWordId,
 	onSelectWord,
+	onDeleteWord,
 }: ControlPanelProps) {
 	return (
 		<div className="flex flex-col gap-4 w-80">

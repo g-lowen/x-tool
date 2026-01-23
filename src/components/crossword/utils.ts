@@ -62,11 +62,10 @@ export function calculateGridPosition(
 	const newRow = currentRow + deltaRows;
 	const newCol = currentCol + deltaCols;
 
-	const maxCol = direction === "horizontal" ? cols - wordLength : cols - 1;
-	const maxRow = direction === "vertical" ? rows - wordLength : rows - 1;
-
-	const clampedRow = Math.max(0, Math.min(maxRow, newRow));
-	const clampedCol = Math.max(0, Math.min(maxCol, newCol));
+	// Simple clamping - just ensure within grid bounds
+	// Actual overflow checking happens in moveWord with calculateWordPositions
+	const clampedRow = Math.max(0, Math.min(rows - 1, newRow));
+	const clampedCol = Math.max(0, Math.min(cols - 1, newCol));
 
 	return { row: clampedRow, col: clampedCol };
 }

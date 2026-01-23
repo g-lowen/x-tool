@@ -24,18 +24,18 @@ export function calculateWordPositions(word: Word): LetterPosition[] {
 			index: i,
 		});
 
-		// Check if there's a bend at the next position
-		const bend = word.bends?.find((b) => b.index === i + 1);
-		if (bend) {
-			currentDirection = bend.direction;
-		}
-
 		// Move to next position (if not at end)
 		if (i < word.text.length - 1) {
 			if (currentDirection === "horizontal") {
 				currentCol++;
 			} else {
 				currentRow++;
+			}
+			
+			// Check if there's a bend at the next position (after moving)
+			const bend = word.bends?.find((b) => b.index === i + 1);
+			if (bend) {
+				currentDirection = bend.direction;
 			}
 		}
 	}

@@ -8,14 +8,12 @@ interface DraggableWordProps {
 	word: Word;
 	isSelected: boolean;
 	onSelect: () => void;
-	onDelete: () => void;
 }
 
 export function DraggableWord({
 	word,
 	isSelected,
 	onSelect,
-	onDelete,
 }: DraggableWordProps) {
 	const { attributes, listeners, setNodeRef, transform, isDragging } =
 		useDraggable({
@@ -55,8 +53,8 @@ export function DraggableWord({
 				isDragging ? "opacity-50" : ""
 			} ${isSelected ? "ring-2 ring-blue-500 rounded" : ""}`}
 			style={{
-				top: `${word.row * GRID_TOTAL_CELL_SIZE + GRID_BORDER_SIZE}px`,
-				left: `${word.col * GRID_TOTAL_CELL_SIZE + GRID_BORDER_SIZE}px`,
+				top: `${bounds.minRow * GRID_TOTAL_CELL_SIZE + GRID_BORDER_SIZE}px`,
+				left: `${bounds.minCol * GRID_TOTAL_CELL_SIZE + GRID_BORDER_SIZE}px`,
 				width: `${width}px`,
 				height: `${height}px`,
 				...style,
@@ -64,8 +62,8 @@ export function DraggableWord({
 		>
 			{/* Render each letter at its absolute position */}
 			{positions.map((pos, idx) => {
-				const offsetRow = pos.row - word.row;
-				const offsetCol = pos.col - word.col;
+				const offsetRow = pos.row - bounds.minRow;
+				const offsetCol = pos.col - bounds.minCol;
 
 				return (
 					<div
@@ -81,23 +79,12 @@ export function DraggableWord({
 							border: "1px solid #000",
 						}}
 					>
-						{pos.char === " " ? "" : pos.char}
+						<span className="print-cell-value">
+							{pos.char === " " ? "" : pos.char}
+						</span>
 					</div>
 				);
 			})}
-			{/* Delete button */}
-			{isSelected && (
-				<button
-					type="button"
-					onClick={(e) => {
-						e.stopPropagation();
-						onDelete();
-					}}
-					className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full text-xs hover:bg-red-600 z-10"
-				>
-					×
-				</button>
-			)}
 		</div>
 	);
 }

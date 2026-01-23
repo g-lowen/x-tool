@@ -4,12 +4,14 @@ interface WordListProps {
 	words: Word[];
 	selectedWordId: string | null;
 	onSelectWord: (wordId: string) => void;
+	onDeleteWord: (wordId: string) => void;
 }
 
 export function WordList({
 	words,
 	selectedWordId,
 	onSelectWord,
+	onDeleteWord,
 }: WordListProps) {
 	return (
 		<div className="bg-white p-4 rounded-lg shadow">
@@ -26,7 +28,7 @@ export function WordList({
 						}}
 						role="button"
 						tabIndex={0}
-						className={`p-2 border rounded cursor-pointer ${
+						className={`p-2 border rounded cursor-pointer relative ${
 							selectedWordId === word.id
 								? "bg-blue-100 border-blue-500"
 								: "bg-white hover:bg-gray-50"
@@ -37,6 +39,16 @@ export function WordList({
 							{word.direction === "horizontal" ? "→" : "↓"} ({word.row + 1},
 							{word.col + 1})
 						</div>
+						<button
+							type="button"
+							onClick={(e) => {
+								e.stopPropagation();
+								onDeleteWord(word.id);
+							}}
+							className="absolute top-1 right-1 w-5 h-5 bg-red-500 text-white rounded-full text-xs hover:bg-red-600 flex items-center justify-center"
+						>
+							×
+						</button>
 					</div>
 				))}
 			</div>

@@ -13,7 +13,6 @@ interface GridDisplayProps {
 	words: Word[];
 	selectedWordId: string | null;
 	onSelectWord: (wordId: string) => void;
-	onDeleteWord: (wordId: string) => void;
 	draggingWordId: string | null;
 }
 
@@ -27,18 +26,17 @@ export function GridDisplay({
 	words,
 	selectedWordId,
 	onSelectWord,
-	onDeleteWord,
 	draggingWordId,
 }: GridDisplayProps) {
 	return (
 		<div className="flex flex-col items-center gap-4">
-			<div className="text-sm text-gray-600">
+			<div className="text-sm text-gray-600 no-print">
 				{rows} × {cols} grid
 			</div>
 
 			<div className="relative">
 				<div
-					className="inline-grid gap-px bg-black border-2 border-black"
+					className="inline-grid gap-px bg-black border-2 border-black print-hide-grid"
 					style={{
 						gridTemplateColumns: `repeat(${cols}, 40px)`,
 						gridTemplateRows: `repeat(${rows}, 40px)`,
@@ -90,7 +88,6 @@ export function GridDisplay({
 							word={word}
 							isSelected={selectedWordId === word.id}
 							onSelect={() => onSelectWord(word.id)}
-							onDelete={() => onDeleteWord(word.id)}
 						/>
 					))}
 				</div>

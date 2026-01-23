@@ -83,14 +83,13 @@ export function useCrosswordWords({
 		const word = words.find((w) => w.id === wordId);
 		if (!word) return;
 
-		// Clamp position to ensure word stays within grid boundaries
-		const maxCol =
-			word.direction === "horizontal" ? cols - word.text.length : cols - 1;
-		const maxRow =
-			word.direction === "vertical" ? rows - word.text.length : rows - 1;
+		// Create updated word with new position
+		const updatedWord = { ...word, row: newRow, col: newCol };
 
-		const clampedRow = Math.max(0, Math.min(maxRow, newRow));
-		const clampedCol = Math.max(0, Math.min(maxCol, newCol));
+		// Check if word would overflow with new position
+		if (wouldWordOverflow(updatedWord, rows, cols)) {
+			return; // Don't move if it would overflow
+		}
 
 		setCells((prev) => {
 			const newCells = prev.map((row) => row.map((cell) => ({ ...cell })));
@@ -106,33 +105,21 @@ export function useCrosswordWords({
 				}
 			}
 
-			// Place at new position using clamped coordinates
-			let row = clampedRow;
-			let col = clampedCol;
-			for (let i = 0; i < word.text.length; i++) {
-				if (row >= rows || col >= cols || row < 0 || col < 0) {
-					break;
-				}
-
-				const char = word.text[i];
-				if (char === " ") {
-					// Make space cells black
-					newCells[row][col].isBlack = true;
-					newCells[row][col].value = "";
-					newCells[row][col].wordId = wordId;
-				} else {
-					// Skip if cell is already black (from another word's space)
-					if (newCells[row][col].isBlack) {
-						break;
+			// Place at new position using calculateWordPositions to handle bends
+			const positions = calculateWordPositions(updatedWord);
+			for (const pos of positions) {
+				if (pos.row >= 0 && pos.row < rows && pos.col >= 0 && pos.col < cols) {
+					const char = pos.char;
+					if (char === " ") {
+						newCells[pos.row][pos.col].isBlack = true;
+						newCells[pos.row][pos.col].value = "";
+						newCells[pos.row][pos.col].wordId = wordId;
+					} else {
+						if (!newCells[pos.row][pos.col].isBlack) {
+							newCells[pos.row][pos.col].value = char;
+							newCells[pos.row][pos.col].wordId = wordId;
+						}
 					}
-					newCells[row][col].value = char;
-					newCells[row][col].wordId = wordId;
-				}
-
-				if (word.direction === "horizontal") {
-					col++;
-				} else {
-					row++;
 				}
 			}
 
@@ -141,7 +128,7 @@ export function useCrosswordWords({
 
 		setWords((prev) =>
 			prev.map((w) =>
-				w.id === wordId ? { ...w, row: clampedRow, col: clampedCol } : w,
+				w.id === wordId ? updatedWord : w,
 			),
 		);
 	};

@@ -46,9 +46,10 @@ export function GridCell({
 							: isOver
 								? "bg-green-100"
 								: "bg-white hover:bg-gray-100"
-			}`}
+			} ${!cell.isBlack && !cell.wordId ? "print-hide-empty" : ""}`}
 		>
-			{!isDragging && !cell.isBlack && !cell.wordId && cell.value}
-		</div>
+			{!isDragging && !cell.isBlack && !cell.wordId && (
+				<span className="print-cell-value">{cell.value}</span>
+			)}	</div>
 	);
 }

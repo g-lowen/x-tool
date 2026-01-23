@@ -72,21 +72,8 @@ export function CrosswordGrid({
 		if (word) {
 			if (over) {
 				const [dropRow, dropCol] = (over.id as string).split("-").map(Number);
-
-				// Clamp position to prevent overflow
-				const maxCol =
-					word.direction === "horizontal"
-						? grid.cols - word.text.length
-						: grid.cols - 1;
-				const maxRow =
-					word.direction === "vertical"
-						? grid.rows - word.text.length
-						: grid.rows - 1;
-
-				const clampedRow = Math.max(0, Math.min(maxRow, dropRow));
-				const clampedCol = Math.max(0, Math.min(maxCol, dropCol));
-
-				wordManager.moveWord(wordId, clampedRow, clampedCol);
+				// Let moveWord handle overflow checking with actual bent positions
+				wordManager.moveWord(wordId, dropRow, dropCol);
 			} else if (delta) {
 				const { row, col } = calculateGridPosition(
 					delta,
@@ -106,45 +93,88 @@ export function CrosswordGrid({
 		setDraggingWordId(event.active.id as string);
 	};
 
+	const handlePrint = () => {
+		window.print();
+	};
+
 	return (
-		<DndContext
-			sensors={sensors}
-			collisionDetection={topLeftCornerCollision}
-			onDragStart={handleDragStart}
-			onDragEnd={handleDragEnd}
-			modifiers={[snapToGridModifier]}
-		>
-			<div className="flex gap-8 p-8">
-				<ControlPanel
-					direction={direction}
-					onDirectionChange={setDirection}
-					inputText={inputText}
-					onInputTextChange={setInputText}
-					onPlaceWord={handlePlaceWord}
-					selectedCell={grid.selectedCell}
-					words={wordManager.words}
-					selectedWordId={wordManager.selectedWord}
-					onSelectWord={wordManager.setSelectedWord}
-				/>
+		<>
+			<style>
+				{`
+					@media print {
+						.no-print {
+							display: none !important;
+						}
+						.print-cell-value {
+							display: none !important;
+						}
+						.print-hide-empty {
+							display: none !important;
+						}
+						.print-hide-grid {
+							display: none !important;
+						}
+						@page {
+							margin: 1cm;
+						}
+						body {
+							print-color-adjust: exact;
+							-webkit-print-color-adjust: exact;
+						}
+					}
+				`}
+			</style>
+			<DndContext
+				sensors={sensors}
+				collisionDetection={topLeftCornerCollision}
+				onDragStart={handleDragStart}
+				onDragEnd={handleDragEnd}
+				modifiers={[snapToGridModifier]}
+			>
+				<div className="flex gap-8 p-8">
+					<button
+						type="button"
+						onClick={handlePrint}
+						className="no-print fixed top-4 right-4 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-semibold shadow-lg z-50"
+					>
+						🖨️ Print Blank Puzzle
+					</button>
+
+				<div className="no-print">
+					<ControlPanel
+						direction={direction}
+						onDirectionChange={setDirection}
+						inputText={inputText}
+						onInputTextChange={setInputText}
+						onPlaceWord={handlePlaceWord}
+						selectedCell={grid.selectedCell}
+						words={wordManager.words}
+						selectedWordId={wordManager.selectedWord}
+						onSelectWord={wordManager.setSelectedWord}
+						onDeleteWord={handleDeleteWord}
+					/>
+				</div>
 
 				{wordManager.selectedWord && (
-					<BendControls
-						word={
-							wordManager.words.find(
-								(w) => w.id === wordManager.selectedWord,
-							) as NonNullable<(typeof wordManager.words)[0]>
-						}
-						onAddBend={(index, dir) => {
-							if (wordManager.selectedWord) {
-								wordManager.addBend(wordManager.selectedWord, index, dir);
+					<div className="no-print">
+						<BendControls
+							word={
+								wordManager.words.find(
+									(w) => w.id === wordManager.selectedWord,
+								) as NonNullable<(typeof wordManager.words)[0]>
 							}
-						}}
-						onRemoveBend={(index) => {
-							if (wordManager.selectedWord) {
-								wordManager.removeBend(wordManager.selectedWord, index);
-							}
-						}}
-					/>
+							onAddBend={(index, dir) => {
+								if (wordManager.selectedWord) {
+									wordManager.addBend(wordManager.selectedWord, index, dir);
+								}
+							}}
+							onRemoveBend={(index) => {
+								if (wordManager.selectedWord) {
+									wordManager.removeBend(wordManager.selectedWord, index);
+								}
+							}}
+						/>
+					</div>
 				)}
 
 				<GridDisplay
@@ -157,10 +187,18 @@ export function CrosswordGrid({
 					onCellContextMenu={grid.makeBlackCell}
 					words={wordManager.words}
 					selectedWordId={wordManager.selectedWord}
-					onSelectWord={wordManager.setSelectedWord}
-					onDeleteWord={handleDeleteWord}
-				/>
-			</div>
-		</DndContext>
+					onSelectWord={(wordId) => {
+						// Toggle selection: if already selected, deselect it
+						if (wordManager.selectedWord === wordId) {
+							wordManager.setSelectedWord(null);
+						} else {
+							wordManager.setSelectedWord(wordId);
+						}
+					}}
+
+					/>
+				</div>
+			</DndContext>
+		</>
 	);
 }
