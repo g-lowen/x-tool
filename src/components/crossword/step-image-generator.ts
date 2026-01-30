@@ -19,7 +19,7 @@ export async function generateStepImages(
 		return;
 	}
 
-	for (let step = 1; step <= words.length; step++) {
+	for (let step = 0; step <= words.length; step++) {
 		// Create empty cells
 		const cells: Cell[][] = Array.from({ length: rows }, () =>
 			Array.from({ length: cols }, () => ({
@@ -28,19 +28,39 @@ export async function generateStepImages(
 			})),
 		);
 
-		// Add words from step 1 to current step
-		for (let i = 0; i < step; i++) {
-			const word = words[i];
-			const positions = calculateWordPositions(word);
+		// Track which cells will eventually have content
+		const willHaveContent: boolean[][] = Array.from({ length: rows }, () =>
+			Array.from({ length: cols }, () => false),
+		);
 
+		// First pass: Mark all cells that will eventually have content (from all words)
+		for (const word of words) {
+			const positions = calculateWordPositions(word);
 			for (const pos of positions) {
 				if (pos.row >= 0 && pos.row < rows && pos.col >= 0 && pos.col < cols) {
-					const char = pos.char;
-					if (char === " ") {
+					willHaveContent[pos.row][pos.col] = true;
+					if (pos.char === " ") {
 						cells[pos.row][pos.col].isBlack = true;
-						cells[pos.row][pos.col].value = "";
-					} else {
-						if (!cells[pos.row][pos.col].isBlack) {
+					}
+				}
+			}
+		}
+
+		// Second pass: Fill in letters for words up to current step (skip for step 0)
+		if (step > 0) {
+			for (let i = 0; i < step; i++) {
+				const word = words[i];
+				const positions = calculateWordPositions(word);
+
+				for (const pos of positions) {
+					if (
+						pos.row >= 0 &&
+						pos.row < rows &&
+						pos.col >= 0 &&
+						pos.col < cols
+					) {
+						const char = pos.char;
+						if (char !== " " && !cells[pos.row][pos.col].isBlack) {
 							cells[pos.row][pos.col].value = char;
 						}
 					}
@@ -49,7 +69,7 @@ export async function generateStepImages(
 		}
 
 		// Render to canvas
-		const canvas = renderGridToCanvas(cells, rows, cols);
+		const canvas = renderGridToCanvas(cells, willHaveContent, rows, cols);
 
 		// Download the image
 		canvas.toBlob((blob) => {
@@ -57,7 +77,11 @@ export async function generateStepImages(
 				const url = URL.createObjectURL(blob);
 				const link = document.createElement("a");
 				link.href = url;
-				link.download = `crossword-step-${step.toString().padStart(2, "0")}-${words[step - 1].text}.png`;
+				const filename =
+					step === 0
+						? "crossword-step-00-blank.png"
+						: `crossword-step-${step.toString().padStart(2, "0")}-${words[step - 1].text}.png`;
+				link.download = filename;
 				link.click();
 				URL.revokeObjectURL(url);
 			}
@@ -67,7 +91,7 @@ export async function generateStepImages(
 		await new Promise((resolve) => setTimeout(resolve, 150));
 	}
 
-	alert(`Successfully generated ${words.length} step images!`);
+	alert(`Successfully generated ${words.length + 1} step images!`);
 }
 
 /**
@@ -75,6 +99,7 @@ export async function generateStepImages(
  */
 function renderGridToCanvas(
 	cells: Cell[][],
+	willHaveContent: boolean[][],
 	rows: number,
 	cols: number,
 ): HTMLCanvasElement {
@@ -96,13 +121,13 @@ function renderGridToCanvas(
 	ctx.fillStyle = "#ffffff";
 	ctx.fillRect(0, 0, totalWidth, totalHeight);
 
-	// Draw only cells with letters or black cells (spaces)
+	// Draw cells that will have content
 	for (let row = 0; row < rows; row++) {
 		for (let col = 0; col < cols; col++) {
 			const cell = cells[row][col];
 
-			// Skip empty cells (no value and not black)
-			if (!cell.value && !cell.isBlack) {
+			// Skip cells that will never have content
+			if (!willHaveContent[row][col]) {
 				continue;
 			}
 
@@ -123,16 +148,18 @@ function renderGridToCanvas(
 				ctx.lineWidth = 2;
 				ctx.strokeRect(x, y, CELL_SIZE, CELL_SIZE);
 
-				// Cell value
-				ctx.fillStyle = "#000000";
-				ctx.font = "bold 24px Arial";
-				ctx.textAlign = "center";
-				ctx.textBaseline = "middle";
-				ctx.fillText(
-					cell.value.toUpperCase(),
-					x + CELL_SIZE / 2,
-					y + CELL_SIZE / 2,
-				);
+				// Cell value (if it has been filled in this step)
+				if (cell.value) {
+					ctx.fillStyle = "#000000";
+					ctx.font = "bold 24px Arial";
+					ctx.textAlign = "center";
+					ctx.textBaseline = "middle";
+					ctx.fillText(
+						cell.value.toUpperCase(),
+						x + CELL_SIZE / 2,
+						y + CELL_SIZE / 2,
+					);
+				}
 			}
 		}
 	}

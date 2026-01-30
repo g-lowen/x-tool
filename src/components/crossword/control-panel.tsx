@@ -74,10 +74,10 @@ export function ControlPanel({
 					disabled={words.length === 0}
 					className="w-full px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
 				>
-					📸 Generate Step Images ({words.length})
+					📸 Generate Step Images ({words.length + 1})
 				</button>
 				<p className="text-xs text-gray-500 mt-2">
-					Downloads {words.length} images showing progressive solutions
+					Downloads {words.length + 1} images showing progressive solutions
 				</p>
 			</div>
 
