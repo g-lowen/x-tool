@@ -17,6 +17,12 @@ export function calculateWordPositions(word: Word): LetterPosition[] {
 	let currentDirection = word.direction;
 
 	for (let i = 0; i < word.text.length; i++) {
+		// Check if there's a bend at this position (before placing the letter)
+		const bendAtCurrent = word.bends?.find((b) => b.index === i);
+		if (bendAtCurrent) {
+			currentDirection = bendAtCurrent.direction;
+		}
+
 		positions.push({
 			row: currentRow,
 			col: currentCol,
@@ -30,12 +36,6 @@ export function calculateWordPositions(word: Word): LetterPosition[] {
 				currentCol++;
 			} else {
 				currentRow++;
-			}
-			
-			// Check if there's a bend at the next position (after moving)
-			const bend = word.bends?.find((b) => b.index === i + 1);
-			if (bend) {
-				currentDirection = bend.direction;
 			}
 		}
 	}
