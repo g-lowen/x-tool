@@ -14,6 +14,8 @@ interface ControlPanelProps {
 	selectedWordId: string | null;
 	onSelectWord: (wordId: string | null) => void;
 	onDeleteWord: (wordId: string) => void;
+	onMoveWordUp: (wordId: string) => void;
+	onMoveWordDown: (wordId: string) => void;
 }
 
 export function ControlPanel({
@@ -27,6 +29,8 @@ export function ControlPanel({
 	selectedWordId,
 	onSelectWord,
 	onDeleteWord,
+	onMoveWordUp,
+	onMoveWordDown,
 }: ControlPanelProps) {
 	return (
 		<div className="flex flex-col gap-4 w-80">
@@ -56,6 +60,9 @@ export function ControlPanel({
 				words={words}
 				selectedWordId={selectedWordId}
 				onSelectWord={onSelectWord}
+				onDeleteWord={onDeleteWord}
+				onMoveWordUp={onMoveWordUp}
+				onMoveWordDown={onMoveWordDown}
 			/>
 
 			<div className="text-sm text-gray-600">

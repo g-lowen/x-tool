@@ -34,6 +34,7 @@ export function CrosswordGrid({
 	const [direction, setDirection] = useState<Direction>("horizontal");
 	const [inputText, setInputText] = useState("");
 	const [draggingWordId, setDraggingWordId] = useState<string | null>(null);
+	const [printWithSolution, setPrintWithSolution] = useState(false);
 
 	const handlePlaceWord = () => {
 		if (!grid.selectedCell || !inputText.trim()) return;
@@ -92,8 +93,18 @@ export function CrosswordGrid({
 		setDraggingWordId(event.active.id as string);
 	};
 
-	const handlePrint = () => {
+	const _handlePrint = () => {
 		window.print();
+	};
+
+	const handlePrintBlank = () => {
+		setPrintWithSolution(false);
+		setTimeout(() => window.print(), 0);
+	};
+
+	const handlePrintSolution = () => {
+		setPrintWithSolution(true);
+		setTimeout(() => window.print(), 0);
 	};
 
 	const handleBackgroundClick = (e: React.MouseEvent) => {
@@ -112,8 +123,14 @@ export function CrosswordGrid({
 						.no-print {
 							display: none !important;
 						}
+						${
+							!printWithSolution
+								? `
 						.print-cell-value {
 							display: none !important;
+						}
+						`
+								: ""
 						}
 						.print-hide-empty {
 							display: none !important;
@@ -139,13 +156,22 @@ export function CrosswordGrid({
 				modifiers={[snapToGridModifier]}
 			>
 				<div className="flex gap-8 p-8" onClick={handleBackgroundClick}>
-					<button
-						type="button"
-						onClick={handlePrint}
-						className="no-print fixed top-4 right-4 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-semibold shadow-lg z-50"
-					>
-						🖨️ Print Blank Puzzle
-					</button>
+					<div className="no-print fixed top-4 right-4 flex gap-2 z-50">
+						<button
+							type="button"
+							onClick={handlePrintBlank}
+							className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-semibold shadow-lg"
+						>
+							🖨️ Print Blank Puzzle
+						</button>
+						<button
+							type="button"
+							onClick={handlePrintSolution}
+							className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-semibold shadow-lg"
+						>
+							✓ Print Solution
+						</button>
+					</div>
 
 					<div className="no-print" onClick={(e) => e.stopPropagation()}>
 						<ControlPanel
@@ -159,6 +185,8 @@ export function CrosswordGrid({
 							selectedWordId={wordManager.selectedWord}
 							onSelectWord={wordManager.setSelectedWord}
 							onDeleteWord={handleDeleteWord}
+							onMoveWordUp={wordManager.moveWordUp}
+							onMoveWordDown={wordManager.moveWordDown}
 						/>
 					</div>
 

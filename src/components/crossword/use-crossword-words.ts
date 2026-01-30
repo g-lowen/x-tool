@@ -126,11 +126,7 @@ export function useCrosswordWords({
 			return newCells;
 		});
 
-		setWords((prev) =>
-			prev.map((w) =>
-				w.id === wordId ? updatedWord : w,
-			),
-		);
+		setWords((prev) => prev.map((w) => (w.id === wordId ? updatedWord : w)));
 	};
 
 	const deleteWord = (wordId: string) => {
@@ -269,6 +265,34 @@ export function useCrosswordWords({
 		setWords((prev) => prev.map((w) => (w.id === wordId ? updatedWord : w)));
 	};
 
+	const moveWordUp = (wordId: string) => {
+		setWords((prev) => {
+			const index = prev.findIndex((w) => w.id === wordId);
+			if (index <= 0) return prev;
+
+			const newWords = [...prev];
+			[newWords[index - 1], newWords[index]] = [
+				newWords[index],
+				newWords[index - 1],
+			];
+			return newWords;
+		});
+	};
+
+	const moveWordDown = (wordId: string) => {
+		setWords((prev) => {
+			const index = prev.findIndex((w) => w.id === wordId);
+			if (index < 0 || index >= prev.length - 1) return prev;
+
+			const newWords = [...prev];
+			[newWords[index], newWords[index + 1]] = [
+				newWords[index + 1],
+				newWords[index],
+			];
+			return newWords;
+		});
+	};
+
 	return {
 		words,
 		selectedWord,
@@ -278,5 +302,7 @@ export function useCrosswordWords({
 		deleteWord,
 		addBend,
 		removeBend,
+		moveWordUp,
+		moveWordDown,
 	};
 }
