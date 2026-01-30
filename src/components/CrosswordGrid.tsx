@@ -96,6 +96,14 @@ export function CrosswordGrid({
 		window.print();
 	};
 
+	const handleBackgroundClick = (e: React.MouseEvent) => {
+		// Only deselect if clicking directly on the background div, not its children
+		if (e.target === e.currentTarget) {
+			grid.setSelectedCell(null);
+			wordManager.setSelectedWord(null);
+		}
+	};
+
 	return (
 		<>
 			<style>
@@ -130,7 +138,7 @@ export function CrosswordGrid({
 				onDragEnd={handleDragEnd}
 				modifiers={[snapToGridModifier]}
 			>
-				<div className="flex gap-8 p-8">
+				<div className="flex gap-8 p-8" onClick={handleBackgroundClick}>
 					<button
 						type="button"
 						onClick={handlePrint}
@@ -139,7 +147,7 @@ export function CrosswordGrid({
 						🖨️ Print Blank Puzzle
 					</button>
 
-					<div className="no-print">
+					<div className="no-print" onClick={(e) => e.stopPropagation()}>
 						<ControlPanel
 							direction={direction}
 							onDirectionChange={setDirection}
