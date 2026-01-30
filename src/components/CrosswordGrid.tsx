@@ -10,6 +10,7 @@ import { useState } from "react";
 import { GRID_TOTAL_CELL_SIZE } from "./crossword/constants";
 import { ControlPanel } from "./crossword/control-panel";
 import { GridDisplay } from "./crossword/grid-display";
+import { generateStepImages } from "./crossword/step-image-generator";
 import type { CrosswordGridProps, Direction } from "./crossword/types";
 import { useCrosswordGrid } from "./crossword/use-crossword-grid";
 import { useCrosswordWords } from "./crossword/use-crossword-words";
@@ -107,6 +108,14 @@ export function CrosswordGrid({
 		setTimeout(() => window.print(), 0);
 	};
 
+	const handleGenerateStepImages = async () => {
+		if (wordManager.words.length === 0) {
+			alert("Add some words first!");
+			return;
+		}
+		await generateStepImages(grid.rows, grid.cols, wordManager.words);
+	};
+
 	const handleBackgroundClick = (e: React.MouseEvent) => {
 		// Only deselect if clicking directly on the background div, not its children
 		if (e.target === e.currentTarget) {
@@ -187,6 +196,7 @@ export function CrosswordGrid({
 							onDeleteWord={handleDeleteWord}
 							onMoveWordUp={wordManager.moveWordUp}
 							onMoveWordDown={wordManager.moveWordDown}
+							onGenerateStepImages={handleGenerateStepImages}
 						/>
 					</div>
 

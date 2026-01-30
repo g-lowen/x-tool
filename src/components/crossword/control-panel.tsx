@@ -16,6 +16,7 @@ interface ControlPanelProps {
 	onDeleteWord: (wordId: string) => void;
 	onMoveWordUp: (wordId: string) => void;
 	onMoveWordDown: (wordId: string) => void;
+	onGenerateStepImages: () => void;
 }
 
 export function ControlPanel({
@@ -31,6 +32,7 @@ export function ControlPanel({
 	onDeleteWord,
 	onMoveWordUp,
 	onMoveWordDown,
+	onGenerateStepImages,
 }: ControlPanelProps) {
 	return (
 		<div className="flex flex-col gap-4 w-80">
@@ -64,6 +66,20 @@ export function ControlPanel({
 				onMoveWordUp={onMoveWordUp}
 				onMoveWordDown={onMoveWordDown}
 			/>
+
+			<div className="bg-white p-4 rounded-lg shadow">
+				<button
+					type="button"
+					onClick={onGenerateStepImages}
+					disabled={words.length === 0}
+					className="w-full px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+				>
+					📸 Generate Step Images ({words.length})
+				</button>
+				<p className="text-xs text-gray-500 mt-2">
+					Downloads {words.length} images showing progressive solutions
+				</p>
+			</div>
 
 			<div className="text-sm text-gray-600">
 				<p className="font-medium mb-1">Instructions:</p>
