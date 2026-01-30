@@ -92,23 +92,38 @@ function renderGridToCanvas(
 		throw new Error("Could not get canvas context");
 	}
 
-	// Fill background
-	ctx.fillStyle = "#000000";
+	// Fill background (transparent or white)
+	ctx.fillStyle = "#ffffff";
 	ctx.fillRect(0, 0, totalWidth, totalHeight);
 
-	// Draw cells
+	// Draw only cells with letters or black cells (spaces)
 	for (let row = 0; row < rows; row++) {
 		for (let col = 0; col < cols; col++) {
 			const cell = cells[row][col];
+
+			// Skip empty cells (no value and not black)
+			if (!cell.value && !cell.isBlack) {
+				continue;
+			}
+
 			const x = BORDER_WIDTH + col * (CELL_SIZE + GRID_GAP) + GRID_GAP;
 			const y = BORDER_WIDTH + row * (CELL_SIZE + GRID_GAP) + GRID_GAP;
 
-			// Cell background
-			ctx.fillStyle = cell.isBlack ? "#000000" : "#ffffff";
-			ctx.fillRect(x, y, CELL_SIZE, CELL_SIZE);
+			if (cell.isBlack) {
+				// Render black cells (spaces in words)
+				ctx.fillStyle = "#000000";
+				ctx.fillRect(x, y, CELL_SIZE, CELL_SIZE);
+			} else {
+				// Cell background (white with black border)
+				ctx.fillStyle = "#ffffff";
+				ctx.fillRect(x, y, CELL_SIZE, CELL_SIZE);
 
-			// Cell value
-			if (!cell.isBlack && cell.value) {
+				// Cell border
+				ctx.strokeStyle = "#000000";
+				ctx.lineWidth = 2;
+				ctx.strokeRect(x, y, CELL_SIZE, CELL_SIZE);
+
+				// Cell value
 				ctx.fillStyle = "#000000";
 				ctx.font = "bold 24px Arial";
 				ctx.textAlign = "center";
