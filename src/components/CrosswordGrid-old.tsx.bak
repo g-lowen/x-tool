@@ -1,0 +1,713 @@
+import {
+	DndContext,
+	type DragEndEvent,
+	PointerSensor,
+	useDraggable,
+	useDroppable,
+	useSensor,
+	useSensors,
+} from "@dnd-kit/core";
+import { CSS } from "@dnd-kit/utilities";
+import { useState } from "react";
+
+interface Cell {
+	value: string;
+	isBlack: boolean;
+	wordId?: string;
+}
+
+interface Word {
+	id: string;
+	text: string;
+	row: number;
+	col: number;
+	direction: Direction;
+}
+
+interface CrosswordGridProps {
+	initialRows?: number;
+	initialCols?: number;
+}
+
+type Direction = "horizontal" | "vertical";
+
+interface DraggableWordProps {
+	word: Word;
+	isSelected: boolean;
+	onSelect: () => void;
+	onDelete: () => void;
+}
+
+function DraggableWord({
+	word,
+	isSelected,
+	onSelect,
+	onDelete,
+}: DraggableWordProps) {
+	const { attributes, listeners, setNodeRef, transform, isDragging } =
+		useDraggable({
+			id: word.id,
+			data: {
+				row: word.row,
+				col: word.col,
+				length: word.text.length,
+				direction: word.direction,
+			},
+		});
+
+	const style = {
+		transform: CSS.Translate.toString(transform),
+		transformOrigin: "0 0", // Ensure transform origin is at top-left
+	};
+
+	return (
+		<div
+			ref={setNodeRef}
+			{...listeners}
+			{...attributes}
+			onClick={onSelect}
+			onKeyDown={(e) => {
+				if (e.key === "Enter" || e.key === " ") {
+					onSelect();
+				}
+			}}
+			role="button"
+			tabIndex={0}
+			className={`absolute pointer-events-auto cursor-move ${
+				isDragging ? "opacity-50" : ""
+			} ${isSelected ? "ring-2 ring-blue-500 rounded" : ""}`}
+			style={{
+				top: `${word.row * 41 + 2}px`,
+				left: `${word.col * 41 + 2}px`,
+				width:
+					word.direction === "horizontal"
+						? `${word.text.length * 41 - 1}px`
+						: "40px",
+				height:
+					word.direction === "vertical"
+						? `${word.text.length * 41 - 1}px`
+						: "40px",
+				...style,
+			}}
+		>
+			<div
+				className={`h-full flex ${
+					word.direction === "horizontal" ? "flex-row" : "flex-col"
+				}`}
+			>
+				{word.text.split("").map((letter, idx) => (
+					<div
+						key={`${word.id}-${idx}`}
+						className="flex items-center justify-center font-bold text-lg bg-white"
+						style={{
+							width: "40px",
+							height: "40px",
+							border: "1px solid #000",
+							marginRight:
+								word.direction === "horizontal" && idx < word.text.length - 1
+									? "1px"
+									: "0",
+							marginBottom:
+								word.direction === "vertical" && idx < word.text.length - 1
+									? "1px"
+									: "0",
+						}}
+					>
+						{letter}
+					</div>
+				))}
+			</div>
+			{isSelected && (
+				<button
+					type="button"
+					onClick={(e) => {
+						e.stopPropagation();
+						onDelete();
+					}}
+					className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full text-xs hover:bg-red-600"
+				>
+					×
+				</button>
+			)}
+		</div>
+	);
+}
+
+interface GridCellProps {
+	rowIndex: number;
+	colIndex: number;
+	cell: Cell;
+	isSelected: boolean;
+	onClick: () => void;
+	onContextMenu: (e: React.MouseEvent) => void;
+}
+
+function GridCell({
+	rowIndex,
+	colIndex,
+	cell,
+	isSelected,
+	onClick,
+	onContextMenu,
+}: GridCellProps) {
+	const { setNodeRef, isOver } = useDroppable({
+		id: `${rowIndex}-${colIndex}`,
+	});
+
+	return (
+		<div
+			ref={setNodeRef}
+			onClick={onClick}
+			onKeyDown={(e) => {
+				if (e.key === "Enter" || e.key === " ") {
+					onClick();
+				}
+			}}
+			onContextMenu={onContextMenu}
+			role="button"
+			tabIndex={0}
+			className={`w-10 h-10 flex items-center justify-center font-bold text-lg uppercase cursor-pointer select-none ${
+				cell.isBlack
+					? "bg-black"
+					: isSelected
+						? "bg-blue-200 ring-2 ring-blue-500"
+						: isOver
+							? "bg-green-100"
+							: "bg-white hover:bg-gray-100"
+			}`}
+		>
+			{!cell.isBlack && !cell.wordId && cell.value}
+		</div>
+	);
+}
+
+export function CrosswordGrid({
+	initialRows = 15,
+	initialCols = 15,
+}: CrosswordGridProps) {
+	const [rows, setRows] = useState(initialRows);
+	const [cols, setCols] = useState(initialCols);
+	const [cells, setCells] = useState<Cell[][]>(() =>
+		Array.from({ length: initialRows }, () =>
+			Array.from({ length: initialCols }, () => ({
+				value: "",
+				isBlack: false,
+			})),
+		),
+	);
+	const [selectedCell, setSelectedCell] = useState<{
+		row: number;
+		col: number;
+	} | null>(null);
+	const [direction, setDirection] = useState<Direction>("horizontal");
+	const [inputText, setInputText] = useState("");
+	const [words, setWords] = useState<Word[]>([]);
+	const [selectedWord, setSelectedWord] = useState<string | null>(null);
+
+	const updateCell = (
+		rowIndex: number,
+		colIndex: number,
+		value: string,
+		isBlack?: boolean,
+	) => {
+		setCells((prev) => {
+			const newCells = prev.map((row) => row.map((cell) => ({ ...cell })));
+			if (isBlack !== undefined) {
+				newCells[rowIndex][colIndex].isBlack = isBlack;
+			}
+			newCells[rowIndex][colIndex].value = value.toUpperCase();
+			return newCells;
+		});
+	};
+
+	const handleCellClick = (rowIndex: number, colIndex: number) => {
+		if (cells[rowIndex][colIndex].isBlack) {
+			// Toggle black cell off
+			updateCell(rowIndex, colIndex, "", false);
+		} else {
+			setSelectedCell({ row: rowIndex, col: colIndex });
+		}
+	};
+
+	const placeWord = () => {
+		if (!selectedCell || !inputText.trim()) return;
+
+		const letters = inputText.toUpperCase().replace(/[^A-Z]/g, ""); // Remove non-letters
+		const wordId = `word-${Date.now()}`;
+		const newWord: Word = {
+			id: wordId,
+			text: letters,
+			row: selectedCell.row,
+			col: selectedCell.col,
+			direction,
+		};
+
+		setCells((prev) => {
+			const newCells = prev.map((row) => row.map((cell) => ({ ...cell })));
+			let { row, col } = selectedCell;
+
+			for (let i = 0; i < letters.length; i++) {
+				// Check bounds
+				if (
+					row >= rows ||
+					col >= cols ||
+					row < 0 ||
+					col < 0 ||
+					newCells[row][col].isBlack
+				) {
+					break;
+				}
+
+				newCells[row][col].value = letters[i];
+				newCells[row][col].wordId = wordId;
+
+				// Move to next cell based on direction
+				if (direction === "horizontal") {
+					col++;
+				} else {
+					row++;
+				}
+			}
+
+			return newCells;
+		});
+
+		setWords((prev) => [...prev, newWord]);
+		setInputText("");
+	};
+
+	const moveWord = (wordId: string, newRow: number, newCol: number) => {
+		const word = words.find((w) => w.id === wordId);
+		if (!word) return;
+
+		// Clear old position
+		setCells((prev) => {
+			const newCells = prev.map((row) => row.map((cell) => ({ ...cell })));
+			for (let r = 0; r < rows; r++) {
+				for (let c = 0; c < cols; c++) {
+					if (newCells[r][c].wordId === wordId) {
+						newCells[r][c].value = "";
+						newCells[r][c].wordId = undefined;
+					}
+				}
+			}
+
+			// Place at new position
+			let row = newRow;
+			let col = newCol;
+			for (let i = 0; i < word.text.length; i++) {
+				if (
+					row >= rows ||
+					col >= cols ||
+					row < 0 ||
+					col < 0 ||
+					newCells[row][col].isBlack
+				) {
+					break;
+				}
+
+				newCells[row][col].value = word.text[i];
+				newCells[row][col].wordId = wordId;
+
+				if (word.direction === "horizontal") {
+					col++;
+				} else {
+					row++;
+				}
+			}
+
+			return newCells;
+		});
+
+		setWords((prev) =>
+			prev.map((w) =>
+				w.id === wordId ? { ...w, row: newRow, col: newCol } : w,
+			),
+		);
+	};
+
+	const deleteWord = (wordId: string) => {
+		setCells((prev) => {
+			const newCells = prev.map((row) => row.map((cell) => ({ ...cell })));
+			for (let r = 0; r < rows; r++) {
+				for (let c = 0; c < cols; c++) {
+					if (newCells[r][c].wordId === wordId) {
+						newCells[r][c].value = "";
+						newCells[r][c].wordId = undefined;
+					}
+				}
+			}
+			return newCells;
+		});
+
+		setWords((prev) => prev.filter((w) => w.id !== wordId));
+		if (selectedWord === wordId) {
+			setSelectedWord(null);
+		}
+
+		setInputText("");
+	};
+
+	const makeBlackCell = (rowIndex: number, colIndex: number) => {
+		updateCell(rowIndex, colIndex, "", true);
+		if (
+			selectedCell &&
+			selectedCell.row === rowIndex &&
+			selectedCell.col === colIndex
+		) {
+			setSelectedCell(null);
+		}
+	};
+
+	const expandGrid = (direction: "top" | "bottom" | "left" | "right") => {
+		setCells((prev) => {
+			const newCells = prev.map((row) => row.map((cell) => ({ ...cell })));
+
+			switch (direction) {
+				case "top": {
+					const newRow = Array.from({ length: cols }, () => ({
+						value: "",
+						isBlack: false,
+					}));
+					setRows((r) => r + 1);
+					return [newRow, ...newCells];
+				}
+				case "bottom": {
+					const newRow = Array.from({ length: cols }, () => ({
+						value: "",
+						isBlack: false,
+					}));
+					setRows((r) => r + 1);
+					return [...newCells, newRow];
+				}
+				case "left": {
+					setCols((c) => c + 1);
+					return newCells.map((row) => [{ value: "", isBlack: false }, ...row]);
+				}
+				case "right": {
+					setCols((c) => c + 1);
+					return newCells.map((row) => [...row, { value: "", isBlack: false }]);
+				}
+			}
+		});
+	};
+
+	// Snap to grid modifier following dnd-kit documentation pattern
+	const gridSize = 41; // 40px cell + 1px gap
+	const snapToGridModifier = (args: {
+		transform: { x: number; y: number; scaleX: number; scaleY: number };
+	}) => {
+		const { transform } = args;
+
+		return {
+			...transform,
+			x: Math.round(transform.x / gridSize) * gridSize,
+			y: Math.round(transform.y / gridSize) * gridSize,
+		};
+	};
+
+	const sensors = useSensors(
+		useSensor(PointerSensor, {
+			activationConstraint: {
+				distance: 8, // Require dragging 8px before activating
+			},
+		}),
+	);
+
+	// Custom collision detection that uses the top-left corner of the draggable (first letter)
+	const topLeftCornerCollision = (args: any) => {
+		const { collisionRect, droppableContainers } = args;
+
+		if (!collisionRect) return [];
+
+		// Use the top-left corner of the dragging element instead of center
+		const topLeftPoint = {
+			x: collisionRect.left,
+			y: collisionRect.top,
+		};
+
+		const collisions = [];
+
+		// droppableContainers is a Map, so iterate over entries
+		for (const container of droppableContainers.values()) {
+			const { id, rect } = container;
+			if (!rect.current) continue;
+
+			const droppableRect = rect.current;
+
+			// Check if the top-left point is inside this droppable
+			if (
+				topLeftPoint.x >= droppableRect.left &&
+				topLeftPoint.x <= droppableRect.right &&
+				topLeftPoint.y >= droppableRect.top &&
+				topLeftPoint.y <= droppableRect.bottom
+			) {
+				collisions.push({ id });
+			}
+		}
+
+		return collisions;
+	};
+
+	const handleDragEnd = (event: DragEndEvent) => {
+		const { active, over, delta } = event;
+
+		// Get the word being dragged
+		const wordId = active.id as string;
+		const word = words.find((w) => w.id === wordId);
+
+		if (word) {
+			if (over) {
+				// Dropped over a cell - snap to that cell
+				const [dropRow, dropCol] = (over.id as string).split("-").map(Number);
+				moveWord(wordId, dropRow, dropCol);
+			} else if (delta) {
+				// Calculate the new position from the snapped delta
+				const deltaRows = Math.round(delta.y / gridSize);
+				const deltaCols = Math.round(delta.x / gridSize);
+
+				const newRow = word.row + deltaRows;
+				const newCol = word.col + deltaCols;
+
+				// Clamp to grid bounds (accounting for word length)
+				const maxCol =
+					word.direction === "horizontal" ? cols - word.text.length : cols - 1;
+				const maxRow =
+					word.direction === "vertical" ? rows - word.text.length : rows - 1;
+
+				const clampedRow = Math.max(0, Math.min(maxRow, newRow));
+				const clampedCol = Math.max(0, Math.min(maxCol, newCol));
+
+				moveWord(wordId, clampedRow, clampedCol);
+			}
+		}
+	};
+
+	return (
+		<DndContext
+			sensors={sensors}
+			collisionDetection={topLeftCornerCollision}
+			onDragEnd={handleDragEnd}
+			modifiers={[snapToGridModifier]}
+		>
+			<div className="flex gap-8 p-8">
+				{/* Control Panel */}
+				<div className="flex flex-col gap-4 w-80">
+					<div className="bg-white p-4 rounded-lg shadow">
+						<h2 className="font-bold text-lg mb-3">Add Word</h2>
+
+						<div className="space-y-3">
+							<div>
+								<label
+									htmlFor="direction"
+									className="block text-sm font-medium mb-1"
+								>
+									Direction
+								</label>
+								<div className="flex gap-2">
+									<button
+										type="button"
+										onClick={() => setDirection("horizontal")}
+										className={`flex-1 px-3 py-2 rounded ${
+											direction === "horizontal"
+												? "bg-blue-500 text-white"
+												: "bg-gray-200"
+										}`}
+									>
+										Horizontal →
+									</button>
+									<button
+										type="button"
+										onClick={() => setDirection("vertical")}
+										className={`flex-1 px-3 py-2 rounded ${
+											direction === "vertical"
+												? "bg-blue-500 text-white"
+												: "bg-gray-200"
+										}`}
+									>
+										Vertical ↓
+									</button>
+								</div>
+							</div>
+
+							<div>
+								<label
+									htmlFor="wordInput"
+									className="block text-sm font-medium mb-1"
+								>
+									Word/Phrase
+								</label>
+								<input
+									id="wordInput"
+									type="text"
+									value={inputText}
+									onChange={(e) => setInputText(e.target.value)}
+									onKeyDown={(e) => {
+										if (e.key === "Enter") {
+											placeWord();
+										}
+									}}
+									placeholder="e.g. Pink Floyd"
+									className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+								/>
+							</div>
+
+							<button
+								type="button"
+								onClick={placeWord}
+								disabled={!selectedCell || !inputText.trim()}
+								className="w-full px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 disabled:bg-gray-300 disabled:cursor-not-allowed"
+							>
+								Place Word
+							</button>
+
+							{selectedCell && (
+								<div className="text-sm text-gray-600">
+									Selected: Row {selectedCell.row + 1}, Column{" "}
+									{selectedCell.col + 1}
+								</div>
+							)}
+						</div>
+					</div>
+
+					<div className="bg-white p-4 rounded-lg shadow">
+						<h2 className="font-bold text-lg mb-3">Expand Grid</h2>
+						<div className="grid grid-cols-2 gap-2">
+							<button
+								type="button"
+								onClick={() => expandGrid("top")}
+								className="px-3 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+							>
+								+ Top
+							</button>
+							<button
+								type="button"
+								onClick={() => expandGrid("bottom")}
+								className="px-3 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+							>
+								+ Bottom
+							</button>
+							<button
+								type="button"
+								onClick={() => expandGrid("left")}
+								className="px-3 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+							>
+								+ Left
+							</button>
+							<button
+								type="button"
+								onClick={() => expandGrid("right")}
+								className="px-3 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+							>
+								+ Right
+							</button>
+						</div>
+					</div>
+
+					<div className="bg-white p-4 rounded-lg shadow">
+						<h2 className="font-bold text-lg mb-3">Words ({words.length})</h2>
+						<div className="space-y-2 max-h-60 overflow-y-auto">
+							{words.map((word) => (
+								<div
+									key={word.id}
+									onClick={() => setSelectedWord(word.id)}
+									onKeyDown={(e) => {
+										if (e.key === "Enter" || e.key === " ") {
+											setSelectedWord(word.id);
+										}
+									}}
+									role="button"
+									tabIndex={0}
+									className={`p-2 border rounded cursor-pointer ${
+										selectedWord === word.id
+											? "bg-blue-100 border-blue-500"
+											: "bg-white hover:bg-gray-50"
+									}`}
+								>
+									<div className="font-medium">{word.text}</div>
+									<div className="text-xs text-gray-500">
+										{word.direction === "horizontal" ? "→" : "↓"} (
+										{word.row + 1},{word.col + 1})
+									</div>
+								</div>
+							))}
+						</div>
+					</div>
+
+					<div className="text-sm text-gray-600">
+						<p className="font-medium mb-1">Instructions:</p>
+						<ul className="list-disc list-inside space-y-1">
+							<li>Click a cell to select start position</li>
+							<li>Choose direction (→ or ↓)</li>
+							<li>Type word and press Enter or click Place</li>
+							<li>Drag words to move them</li>
+							<li>Click word then × button to delete</li>
+							<li>Right-click cell to make it black</li>
+						</ul>
+					</div>
+				</div>
+
+				{/* Grid */}
+				<div className="flex flex-col items-center gap-4">
+					<div className="text-sm text-gray-600">
+						{rows} × {cols} grid
+					</div>
+
+					<div className="relative">
+						<div
+							className="inline-grid gap-px bg-black border-2 border-black"
+							style={{
+								gridTemplateColumns: `repeat(${cols}, 40px)`,
+								gridTemplateRows: `repeat(${rows}, 40px)`,
+							}}
+						>
+							{cells.map((row, rowIndex) =>
+								row.map((cell, colIndex) => {
+									const isSelected =
+										selectedCell?.row === rowIndex &&
+										selectedCell?.col === colIndex;
+
+									return (
+										<GridCell
+											key={`${rowIndex}-${colIndex}`}
+											rowIndex={rowIndex}
+											colIndex={colIndex}
+											cell={cell}
+											isSelected={isSelected}
+											onClick={() => handleCellClick(rowIndex, colIndex)}
+											onContextMenu={(e) => {
+												e.preventDefault();
+												if (!cell.isBlack) {
+													makeBlackCell(rowIndex, colIndex);
+												}
+											}}
+										/>
+									);
+								}),
+							)}
+						</div>
+
+						{/* Draggable words overlay */}
+						<div
+							className="absolute top-0 left-0 pointer-events-none"
+							style={{
+								width: `${cols * 41 + 3}px`,
+								height: `${rows * 41 + 3}px`,
+							}}
+						>
+							{words.map((word) => (
+								<DraggableWord
+									key={word.id}
+									word={word}
+									isSelected={selectedWord === word.id}
+									onSelect={() => setSelectedWord(word.id)}
+									onDelete={() => deleteWord(word.id)}
+								/>
+							))}
+						</div>
+					</div>
+				</div>
+			</div>
+		</DndContext>
+	);
+}
