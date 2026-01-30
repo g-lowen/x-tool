@@ -39,19 +39,8 @@ export function DraggableWord({
 	return (
 		<div
 			ref={setNodeRef}
-			{...listeners}
 			{...attributes}
-			onClick={onSelect}
-			onKeyDown={(e) => {
-				if (e.key === "Enter" || e.key === " ") {
-					onSelect();
-				}
-			}}
-			role="button"
-			tabIndex={0}
-			className={`absolute pointer-events-auto cursor-move ${
-				isDragging ? "opacity-50" : ""
-			} ${isSelected ? "ring-2 ring-blue-500 rounded" : ""}`}
+			className={`absolute ${isDragging ? "opacity-50" : ""}`}
 			style={{
 				top: `${bounds.minRow * GRID_TOTAL_CELL_SIZE + GRID_BORDER_SIZE}px`,
 				left: `${bounds.minCol * GRID_TOTAL_CELL_SIZE + GRID_BORDER_SIZE}px`,
@@ -68,9 +57,18 @@ export function DraggableWord({
 				return (
 					<div
 						key={`${word.id}-${idx}`}
-						className={`absolute flex items-center justify-center font-bold text-lg ${
+						{...listeners}
+						onClick={onSelect}
+						onKeyDown={(e) => {
+							if (e.key === "Enter" || e.key === " ") {
+								onSelect();
+							}
+						}}
+						role="button"
+						tabIndex={0}
+						className={`absolute flex items-center justify-center font-bold text-lg pointer-events-auto cursor-move ${
 							pos.char === " " ? "bg-black" : "bg-white"
-						}`}
+						} ${isSelected ? "ring-2 ring-blue-500" : ""}`}
 						style={{
 							top: `${offsetRow * GRID_TOTAL_CELL_SIZE}px`,
 							left: `${offsetCol * GRID_TOTAL_CELL_SIZE}px`,
