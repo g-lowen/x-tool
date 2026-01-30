@@ -83,7 +83,9 @@ export function DraggableWord({
 				const offsetRow = pos.row - bounds.minRow;
 				const offsetCol = pos.col - bounds.minCol;
 				const bendAtLetter = getBendAtLetter(idx);
-				const showBendControls = isSelected && clickedLetterIndex === idx;
+				const isLastLetter = idx === word.text.length - 1;
+				const showBendControls =
+					isSelected && clickedLetterIndex === idx && !isLastLetter;
 
 				return (
 					<div
