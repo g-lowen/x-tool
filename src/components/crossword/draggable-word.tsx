@@ -60,9 +60,9 @@ export function DraggableWord({
 		}
 	};
 
-	// Check if there's a bend after this letter
-	const getBendAfterLetter = (idx: number) => {
-		return word.bends?.find((b) => b.index === idx + 1);
+	// Check if there's a bend at this letter
+	const getBendAtLetter = (idx: number) => {
+		return word.bends?.find((b) => b.index === idx);
 	};
 
 	return (
@@ -82,10 +82,10 @@ export function DraggableWord({
 			{positions.map((pos, idx) => {
 				const offsetRow = pos.row - bounds.minRow;
 				const offsetCol = pos.col - bounds.minCol;
-				const bendAfter = getBendAfterLetter(idx);
-				const isLastLetter = idx === word.text.length - 1;
+				const bendAtLetter = getBendAtLetter(idx);
+				const isFirstLetter = idx === 0;
 				const showBendControls =
-					isSelected && clickedLetterIndex === idx && !isLastLetter;
+					isSelected && clickedLetterIndex === idx && !isFirstLetter;
 
 				return (
 					<div
@@ -99,12 +99,12 @@ export function DraggableWord({
 						{/* Bend control buttons above the letter */}
 						{showBendControls && (
 							<div className="absolute -top-10 left-0 flex gap-1 bg-white border-2 border-blue-500 rounded p-1 shadow-lg z-50 pointer-events-auto">
-								{bendAfter ? (
+								{bendAtLetter ? (
 									<button
 										type="button"
 										onClick={(e) => {
 											e.stopPropagation();
-											onRemoveBend(word.id, idx + 1);
+											onRemoveBend(word.id, idx);
 											setClickedLetterIndex(null);
 										}}
 										className="px-2 py-1 text-xs bg-red-500 text-white rounded hover:bg-red-600"
@@ -118,7 +118,7 @@ export function DraggableWord({
 											type="button"
 											onClick={(e) => {
 												e.stopPropagation();
-												onAddBend(word.id, idx + 1, "horizontal");
+												onAddBend(word.id, idx, "horizontal");
 												setClickedLetterIndex(null);
 											}}
 											className="px-2 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600"
@@ -130,7 +130,7 @@ export function DraggableWord({
 											type="button"
 											onClick={(e) => {
 												e.stopPropagation();
-												onAddBend(word.id, idx + 1, "vertical");
+												onAddBend(word.id, idx, "vertical");
 												setClickedLetterIndex(null);
 											}}
 											className="px-2 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600"
