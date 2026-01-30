@@ -7,7 +7,6 @@ import {
 	useSensors,
 } from "@dnd-kit/core";
 import { useState } from "react";
-import { BendControls } from "./crossword/bend-controls";
 import { GRID_TOTAL_CELL_SIZE } from "./crossword/constants";
 import { ControlPanel } from "./crossword/control-panel";
 import { GridDisplay } from "./crossword/grid-display";
@@ -140,62 +139,41 @@ export function CrosswordGrid({
 						🖨️ Print Blank Puzzle
 					</button>
 
-				<div className="no-print">
-					<ControlPanel
-						direction={direction}
-						onDirectionChange={setDirection}
-						inputText={inputText}
-						onInputTextChange={setInputText}
-						onPlaceWord={handlePlaceWord}
-						selectedCell={grid.selectedCell}
-						words={wordManager.words}
-						selectedWordId={wordManager.selectedWord}
-						onSelectWord={wordManager.setSelectedWord}
-						onDeleteWord={handleDeleteWord}
-					/>
-				</div>
-
-				{wordManager.selectedWord && (
 					<div className="no-print">
-						<BendControls
-							word={
-								wordManager.words.find(
-									(w) => w.id === wordManager.selectedWord,
-								) as NonNullable<(typeof wordManager.words)[0]>
-							}
-							onAddBend={(index, dir) => {
-								if (wordManager.selectedWord) {
-									wordManager.addBend(wordManager.selectedWord, index, dir);
-								}
-							}}
-							onRemoveBend={(index) => {
-								if (wordManager.selectedWord) {
-									wordManager.removeBend(wordManager.selectedWord, index);
-								}
-							}}
+						<ControlPanel
+							direction={direction}
+							onDirectionChange={setDirection}
+							inputText={inputText}
+							onInputTextChange={setInputText}
+							onPlaceWord={handlePlaceWord}
+							selectedCell={grid.selectedCell}
+							words={wordManager.words}
+							selectedWordId={wordManager.selectedWord}
+							onSelectWord={wordManager.setSelectedWord}
+							onDeleteWord={handleDeleteWord}
 						/>
 					</div>
-				)}
 
-				<GridDisplay
-					rows={grid.rows}
-					cols={grid.cols}
-					cells={grid.cells}
-					selectedCell={grid.selectedCell}
-					onCellClick={grid.handleCellClick}
-					draggingWordId={draggingWordId}
-					onCellContextMenu={grid.makeBlackCell}
-					words={wordManager.words}
-					selectedWordId={wordManager.selectedWord}
-					onSelectWord={(wordId) => {
-						// Toggle selection: if already selected, deselect it
-						if (wordManager.selectedWord === wordId) {
-							wordManager.setSelectedWord(null);
-						} else {
-							wordManager.setSelectedWord(wordId);
-						}
-					}}
-
+					<GridDisplay
+						rows={grid.rows}
+						cols={grid.cols}
+						cells={grid.cells}
+						selectedCell={grid.selectedCell}
+						onCellClick={grid.handleCellClick}
+						draggingWordId={draggingWordId}
+						onCellContextMenu={grid.makeBlackCell}
+						words={wordManager.words}
+						selectedWordId={wordManager.selectedWord}
+						onSelectWord={(wordId) => {
+							// Toggle selection: if already selected, deselect it
+							if (wordManager.selectedWord === wordId) {
+								wordManager.setSelectedWord(null);
+							} else {
+								wordManager.setSelectedWord(wordId);
+							}
+						}}
+						onAddBend={wordManager.addBend}
+						onRemoveBend={wordManager.removeBend}
 					/>
 				</div>
 			</DndContext>

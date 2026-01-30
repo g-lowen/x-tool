@@ -1,7 +1,7 @@
 import { GRID_BORDER_SIZE, GRID_TOTAL_CELL_SIZE } from "./constants";
 import { DraggableWord } from "./draggable-word";
 import { GridCell } from "./grid-cell";
-import type { Cell, Word } from "./types";
+import type { Cell, Direction, Word } from "./types";
 
 interface GridDisplayProps {
 	rows: number;
@@ -14,6 +14,12 @@ interface GridDisplayProps {
 	selectedWordId: string | null;
 	onSelectWord: (wordId: string) => void;
 	draggingWordId: string | null;
+	onAddBend: (
+		wordId: string,
+		letterIndex: number,
+		direction: Direction,
+	) => void;
+	onRemoveBend: (wordId: string, letterIndex: number) => void;
 }
 
 export function GridDisplay({
@@ -27,6 +33,8 @@ export function GridDisplay({
 	selectedWordId,
 	onSelectWord,
 	draggingWordId,
+	onAddBend,
+	onRemoveBend,
 }: GridDisplayProps) {
 	return (
 		<div className="flex flex-col items-center gap-4">
@@ -88,6 +96,8 @@ export function GridDisplay({
 							word={word}
 							isSelected={selectedWordId === word.id}
 							onSelect={() => onSelectWord(word.id)}
+							onAddBend={onAddBend}
+							onRemoveBend={onRemoveBend}
 						/>
 					))}
 				</div>
