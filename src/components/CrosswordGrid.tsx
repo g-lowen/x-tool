@@ -147,6 +147,9 @@ export function CrosswordGrid({
 						.print-hide-grid {
 							display: none !important;
 						}
+						.print-show-arrows {
+							display: block !important;
+						}
 						@page {
 							margin: 1cm;
 						}

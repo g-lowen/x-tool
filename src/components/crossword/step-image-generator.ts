@@ -69,7 +69,14 @@ export async function generateStepImages(
 		}
 
 		// Render to canvas
-		const canvas = renderGridToCanvas(cells, willHaveContent, rows, cols);
+		const canvas = renderGridToCanvas(
+			cells,
+			willHaveContent,
+			rows,
+			cols,
+			words,
+			step,
+		);
 
 		// Download the image
 		canvas.toBlob((blob) => {
@@ -102,6 +109,8 @@ function renderGridToCanvas(
 	willHaveContent: boolean[][],
 	rows: number,
 	cols: number,
+	words: Word[] = [],
+	currentStep: number = 0,
 ): HTMLCanvasElement {
 	const totalWidth =
 		cols * (CELL_SIZE + GRID_GAP) + GRID_GAP + BORDER_WIDTH * 2;
@@ -164,5 +173,69 @@ function renderGridToCanvas(
 		}
 	}
 
+	// Draw bend arrows for words up to current step
+	if (currentStep > 0) {
+		for (let i = 0; i < currentStep; i++) {
+			const word = words[i];
+			const positions = calculateWordPositions(word);
+
+			for (const pos of positions) {
+				if (pos.row >= 0 && pos.row < rows && pos.col >= 0 && pos.col < cols) {
+					// Check if there's a bend at this position
+					const bend = word.bends?.find((b) => b.index === pos.index);
+					if (bend) {
+						const x =
+							BORDER_WIDTH + pos.col * (CELL_SIZE + GRID_GAP) + GRID_GAP;
+						const y =
+							BORDER_WIDTH + pos.row * (CELL_SIZE + GRID_GAP) + GRID_GAP;
+
+						// Get direction before bend
+						const fromDirection = getDirectionBeforeBend(word, pos.index);
+
+						// Draw arrow
+						ctx.fillStyle = "#0066cc";
+						ctx.font = "bold 16px Arial";
+						ctx.textAlign = "right";
+						ctx.textBaseline = "top";
+
+						let arrowChar = "";
+						if (
+							fromDirection === "horizontal" &&
+							bend.direction === "vertical"
+						) {
+							arrowChar = "⤵";
+						} else if (
+							fromDirection === "vertical" &&
+							bend.direction === "horizontal"
+						) {
+							arrowChar = "↴";
+						} else if (bend.direction === "horizontal") {
+							arrowChar = "→";
+						} else {
+							arrowChar = "↓";
+						}
+
+						ctx.fillText(arrowChar, x + CELL_SIZE - 3, y + 1);
+					}
+				}
+			}
+		}
+	}
+
 	return canvas;
+}
+
+/**
+ * Get the direction before a specific bend point
+ */
+function getDirectionBeforeBend(
+	word: Word,
+	bendIndex: number,
+): "horizontal" | "vertical" {
+	const previousBends = word.bends?.filter((b) => b.index < bendIndex) || [];
+	if (previousBends.length > 0) {
+		const lastBend = previousBends[previousBends.length - 1];
+		return lastBend.direction;
+	}
+	return word.direction;
 }

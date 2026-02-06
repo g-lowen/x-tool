@@ -65,6 +65,18 @@ export function DraggableWord({
 		return word.bends?.find((b) => b.index === idx);
 	};
 
+	// Get the direction before this bend point
+	const getDirectionBeforeBend = (idx: number): Direction => {
+		// Find the most recent bend before this index
+		const previousBends = word.bends?.filter((b) => b.index < idx) || [];
+		if (previousBends.length > 0) {
+			const lastBend = previousBends[previousBends.length - 1];
+			return lastBend.direction;
+		}
+		// If no previous bends, use the word's initial direction
+		return word.direction;
+	};
+
 	return (
 		<div
 			ref={setNodeRef}
@@ -86,6 +98,54 @@ export function DraggableWord({
 				const isLastLetter = idx === word.text.length - 1;
 				const showBendControls =
 					isSelected && clickedLetterIndex === idx && !isLastLetter;
+
+				// Get the correct arrow path based on direction change
+				const getBendArrow = () => {
+					if (!bendAtLetter) return null;
+
+					const fromDirection = getDirectionBeforeBend(idx);
+					const toDirection = bendAtLetter.direction;
+
+					// From horizontal to vertical
+					if (fromDirection === "horizontal" && toDirection === "vertical") {
+						return (
+							<span
+								className="text-blue-600 font-bold text-sm"
+								title="Bend from horizontal to vertical"
+							>
+								⤵
+							</span>
+						);
+					}
+					// From vertical to horizontal
+					if (fromDirection === "vertical" && toDirection === "horizontal") {
+						return (
+							<span
+								className="text-blue-600 font-bold text-sm"
+								title="Bend from vertical to horizontal"
+							>
+								↴
+							</span>
+						);
+					}
+
+					// Default to straight arrow if no direction change
+					return toDirection === "horizontal" ? (
+						<span
+							className="text-blue-600 font-bold text-sm"
+							title="Horizontal direction"
+						>
+							→
+						</span>
+					) : (
+						<span
+							className="text-blue-600 font-bold text-sm"
+							title="Vertical direction"
+						>
+							↓
+						</span>
+					);
+				};
 
 				return (
 					<div
@@ -143,8 +203,22 @@ export function DraggableWord({
 							</div>
 						)}
 
+						{/* Arrow indicator for bend direction */}
+						{bendAtLetter && (
+							<div
+								className="absolute pointer-events-none z-10 print-show-arrows"
+								style={{
+									top: "1px",
+									right: "2px",
+								}}
+							>
+								{getBendArrow()}
+							</div>
+						)}
+
 						{/* Letter cell */}
-						<div
+						<button
+							type="button"
 							{...listeners}
 							onClick={(e) => handleLetterClick(e, idx)}
 							onKeyDown={(e) => {
@@ -152,8 +226,6 @@ export function DraggableWord({
 									onSelect();
 								}
 							}}
-							role="button"
-							tabIndex={0}
 							className={`flex items-center justify-center font-bold text-lg pointer-events-auto cursor-move ${
 								pos.char === " " ? "bg-black" : "bg-white"
 							} ${isSelected ? "ring-2 ring-blue-500" : ""}`}
@@ -166,7 +238,7 @@ export function DraggableWord({
 							<span className="print-cell-value">
 								{pos.char === " " ? "" : pos.char}
 							</span>
-						</div>
+						</button>
 					</div>
 				);
 			})}
