@@ -1,7 +1,13 @@
+export interface CellCustomization {
+	isBlack?: boolean;
+	hasRedBorder?: boolean;
+}
+
 export interface Cell {
 	value: string;
 	isBlack: boolean;
 	wordId?: string;
+	customization?: CellCustomization;
 }
 
 export interface BendPoint {

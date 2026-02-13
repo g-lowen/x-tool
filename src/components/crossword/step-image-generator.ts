@@ -13,6 +13,7 @@ export async function generateStepImages(
 	rows: number,
 	cols: number,
 	words: Word[],
+	originalCells: Cell[][],
 ): Promise<void> {
 	if (words.length === 0) {
 		alert("No words to generate images for!");
@@ -20,11 +21,12 @@ export async function generateStepImages(
 	}
 
 	for (let step = 0; step <= words.length; step++) {
-		// Create empty cells
-		const cells: Cell[][] = Array.from({ length: rows }, () =>
-			Array.from({ length: cols }, () => ({
+		// Create cells based on original cells (to preserve customizations)
+		const cells: Cell[][] = Array.from({ length: rows }, (_, row) =>
+			Array.from({ length: cols }, (_, col) => ({
 				value: "",
-				isBlack: false,
+				isBlack: originalCells[row][col].isBlack,
+				customization: originalCells[row][col].customization,
 			})),
 		);
 
@@ -169,6 +171,13 @@ function renderGridToCanvas(
 						y + CELL_SIZE / 2,
 					);
 				}
+			}
+
+			// Draw red border if customization is set
+			if (cell.customization?.hasRedBorder) {
+				ctx.strokeStyle = "#ef4444"; // red-500
+				ctx.lineWidth = 4;
+				ctx.strokeRect(x + 2, y + 2, CELL_SIZE - 4, CELL_SIZE - 4);
 			}
 		}
 	}

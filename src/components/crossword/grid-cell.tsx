@@ -24,6 +24,8 @@ export function GridCell({
 		id: `${rowIndex}-${colIndex}`,
 	});
 
+	const hasRedBorder = cell.customization?.hasRedBorder ?? false;
+
 	return (
 		<div
 			ref={setNodeRef}
@@ -46,10 +48,13 @@ export function GridCell({
 							: isOver
 								? "bg-green-100"
 								: "bg-white hover:bg-gray-100"
-			} ${!cell.isBlack && !cell.wordId ? "print-hide-empty" : ""}`}
+			} ${!cell.isBlack && !cell.wordId ? "print-hide-empty" : ""} ${
+				hasRedBorder ? "border-4 border-red-500" : ""
+			}`}
 		>
 			{!isDragging && !cell.isBlack && !cell.wordId && (
 				<span className="print-cell-value">{cell.value}</span>
-			)}	</div>
+			)}{" "}
+		</div>
 	);
 }

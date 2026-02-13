@@ -9,7 +9,7 @@ interface GridDisplayProps {
 	cells: Cell[][];
 	selectedCell: { row: number; col: number } | null;
 	onCellClick: (row: number, col: number) => void;
-	onCellContextMenu: (row: number, col: number) => void;
+	onCellContextMenu: (row: number, col: number, e: React.MouseEvent) => void;
 	words: Word[];
 	selectedWordId: string | null;
 	onSelectWord: (wordId: string) => void;
@@ -73,7 +73,7 @@ export function GridDisplay({
 									onContextMenu={(e) => {
 										e.preventDefault();
 										if (!cell.isBlack) {
-											onCellContextMenu(rowIndex, colIndex);
+											onCellContextMenu(rowIndex, colIndex, e);
 										}
 									}}
 								/>

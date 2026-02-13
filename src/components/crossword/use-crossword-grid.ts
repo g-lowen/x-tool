@@ -52,6 +52,45 @@ export function useCrosswordGrid(initialRows: number, initialCols: number) {
 		}
 	};
 
+	const customizeCell = (
+		rowIndex: number,
+		colIndex: number,
+		customization: Partial<{ isBlack: boolean; hasRedBorder: boolean }>,
+	) => {
+		setCells((prev) => {
+			const newCells = prev.map((row) => row.map((cell) => ({ ...cell })));
+			const cell = newCells[rowIndex][colIndex];
+
+			// Handle black cell toggle
+			if (customization.isBlack !== undefined) {
+				cell.isBlack = customization.isBlack;
+				if (customization.isBlack) {
+					cell.value = "";
+				}
+			}
+
+			// Handle red border toggle
+			if (customization.hasRedBorder !== undefined) {
+				cell.customization = {
+					...cell.customization,
+					hasRedBorder: customization.hasRedBorder,
+				};
+			}
+
+			return newCells;
+		});
+
+		// Deselect if making black
+		if (
+			customization.isBlack &&
+			selectedCell &&
+			selectedCell.row === rowIndex &&
+			selectedCell.col === colIndex
+		) {
+			setSelectedCell(null);
+		}
+	};
+
 	return {
 		rows,
 		cols,
@@ -61,5 +100,6 @@ export function useCrosswordGrid(initialRows: number, initialCols: number) {
 		setCells,
 		handleCellClick,
 		makeBlackCell,
+		customizeCell,
 	};
 }

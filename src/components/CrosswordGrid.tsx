@@ -7,6 +7,7 @@ import {
 	useSensors,
 } from "@dnd-kit/core";
 import { useState } from "react";
+import { CellCustomizationMenu } from "./crossword/cell-customization-menu";
 import { GRID_TOTAL_CELL_SIZE } from "./crossword/constants";
 import { ControlPanel } from "./crossword/control-panel";
 import { GridDisplay } from "./crossword/grid-display";
@@ -36,6 +37,12 @@ export function CrosswordGrid({
 	const [inputText, setInputText] = useState("");
 	const [draggingWordId, setDraggingWordId] = useState<string | null>(null);
 	const [printWithSolution, setPrintWithSolution] = useState(false);
+	const [customizationMenu, setCustomizationMenu] = useState<{
+		row: number;
+		col: number;
+		x: number;
+		y: number;
+	} | null>(null);
 
 	const handlePlaceWord = () => {
 		if (!grid.selectedCell || !inputText.trim()) return;
@@ -113,7 +120,12 @@ export function CrosswordGrid({
 			alert("Add some words first!");
 			return;
 		}
-		await generateStepImages(grid.rows, grid.cols, wordManager.words);
+		await generateStepImages(
+			grid.rows,
+			grid.cols,
+			wordManager.words,
+			grid.cells,
+		);
 	};
 
 	const handleBackgroundClick = (e: React.MouseEvent) => {
@@ -122,6 +134,31 @@ export function CrosswordGrid({
 			grid.setSelectedCell(null);
 			wordManager.setSelectedWord(null);
 		}
+	};
+
+	const handleCellContextMenu = (
+		row: number,
+		col: number,
+		e: React.MouseEvent,
+	) => {
+		e.preventDefault();
+		setCustomizationMenu({
+			row,
+			col,
+			x: e.clientX,
+			y: e.clientY,
+		});
+	};
+
+	const handleMakeBlack = (row: number, col: number) => {
+		const cell = grid.cells[row][col];
+		grid.customizeCell(row, col, { isBlack: !cell.isBlack });
+	};
+
+	const handleToggleRedBorder = (row: number, col: number) => {
+		const cell = grid.cells[row][col];
+		const hasRedBorder = cell.customization?.hasRedBorder ?? false;
+		grid.customizeCell(row, col, { hasRedBorder: !hasRedBorder });
 	};
 
 	return (
@@ -210,7 +247,9 @@ export function CrosswordGrid({
 						selectedCell={grid.selectedCell}
 						onCellClick={grid.handleCellClick}
 						draggingWordId={draggingWordId}
-						onCellContextMenu={grid.makeBlackCell}
+						onCellContextMenu={(row, col, e) =>
+							handleCellContextMenu(row, col, e)
+						}
 						words={wordManager.words}
 						selectedWordId={wordManager.selectedWord}
 						onSelectWord={(wordId) => {
@@ -224,6 +263,23 @@ export function CrosswordGrid({
 						onAddBend={wordManager.addBend}
 						onRemoveBend={wordManager.removeBend}
 					/>
+
+					{customizationMenu && (
+						<CellCustomizationMenu
+							cell={grid.cells[customizationMenu.row][customizationMenu.col]}
+							position={{ x: customizationMenu.x, y: customizationMenu.y }}
+							onMakeBlack={() =>
+								handleMakeBlack(customizationMenu.row, customizationMenu.col)
+							}
+							onToggleRedBorder={() =>
+								handleToggleRedBorder(
+									customizationMenu.row,
+									customizationMenu.col,
+								)
+							}
+							onClose={() => setCustomizationMenu(null)}
+						/>
+					)}
 				</div>
 			</DndContext>
 		</>
