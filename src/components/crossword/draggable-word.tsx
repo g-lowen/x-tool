@@ -15,6 +15,7 @@ interface DraggableWordProps {
 		direction: Direction,
 	) => void;
 	onRemoveBend: (wordId: string, letterIndex: number) => void;
+	onCellContextMenu: (row: number, col: number, e: React.MouseEvent) => void;
 }
 
 export function DraggableWord({
@@ -23,6 +24,7 @@ export function DraggableWord({
 	onSelect,
 	onAddBend,
 	onRemoveBend,
+	onCellContextMenu,
 }: DraggableWordProps) {
 	const [clickedLetterIndex, setClickedLetterIndex] = useState<number | null>(
 		null,
@@ -88,6 +90,15 @@ export function DraggableWord({
 				width: `${width}px`,
 				height: `${height}px`,
 				...style,
+			}}
+			onContextMenu={(e) => {
+				// Calculate which cell was right-clicked
+				const rect = e.currentTarget.getBoundingClientRect();
+				const x = e.clientX - rect.left;
+				const y = e.clientY - rect.top;
+				const col = bounds.minCol + Math.floor(x / GRID_TOTAL_CELL_SIZE);
+				const row = bounds.minRow + Math.floor(y / GRID_TOTAL_CELL_SIZE);
+				onCellContextMenu(row, col, e);
 			}}
 		>
 			{/* Render each letter at its absolute position */}

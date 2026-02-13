@@ -96,6 +96,7 @@ export function GridDisplay({
 							onSelect={() => onSelectWord(word.id)}
 							onAddBend={onAddBend}
 							onRemoveBend={onRemoveBend}
+							onCellContextMenu={onCellContextMenu}
 						/>
 					))}
 				</div>
