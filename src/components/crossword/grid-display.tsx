@@ -72,9 +72,7 @@ export function GridDisplay({
 									onClick={() => onCellClick(rowIndex, colIndex)}
 									onContextMenu={(e) => {
 										e.preventDefault();
-										if (!cell.isBlack) {
-											onCellContextMenu(rowIndex, colIndex, e);
-										}
+										onCellContextMenu(rowIndex, colIndex, e);
 									}}
 								/>
 							);

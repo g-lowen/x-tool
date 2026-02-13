@@ -25,6 +25,17 @@ export function GridCell({
 	});
 
 	const hasRedBorder = cell.customization?.hasRedBorder ?? false;
+	const blackBorders = cell.customization?.blackBorders ?? {};
+
+	// Build border classes for black borders
+	const borderClasses = [
+		blackBorders.top && "border-t-2 border-t-black",
+		blackBorders.right && "border-r-2 border-r-black",
+		blackBorders.bottom && "border-b-2 border-b-black",
+		blackBorders.left && "border-l-2 border-l-black",
+	]
+		.filter(Boolean)
+		.join(" ");
 
 	return (
 		<div
@@ -50,7 +61,7 @@ export function GridCell({
 								: "bg-white hover:bg-gray-100"
 			} ${!cell.isBlack && !cell.wordId ? "print-hide-empty" : ""} ${
 				hasRedBorder ? "border-4 border-red-500" : ""
-			}`}
+			} ${borderClasses}`}
 		>
 			{!isDragging && !cell.isBlack && !cell.wordId && (
 				<span className="print-cell-value">{cell.value}</span>

@@ -1,6 +1,12 @@
 export interface CellCustomization {
 	isBlack?: boolean;
 	hasRedBorder?: boolean;
+	blackBorders?: {
+		top?: boolean;
+		right?: boolean;
+		bottom?: boolean;
+		left?: boolean;
+	};
 }
 
 export interface Cell {

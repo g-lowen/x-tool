@@ -179,6 +179,38 @@ function renderGridToCanvas(
 				ctx.lineWidth = 4;
 				ctx.strokeRect(x + 2, y + 2, CELL_SIZE - 4, CELL_SIZE - 4);
 			}
+
+			// Draw black borders on specific sides if customization is set
+			const blackBorders = cell.customization?.blackBorders;
+			if (blackBorders) {
+				ctx.strokeStyle = "#000000";
+				ctx.lineWidth = 5;
+
+				if (blackBorders.top) {
+					ctx.beginPath();
+					ctx.moveTo(x, y);
+					ctx.lineTo(x + CELL_SIZE, y);
+					ctx.stroke();
+				}
+				if (blackBorders.right) {
+					ctx.beginPath();
+					ctx.moveTo(x + CELL_SIZE, y);
+					ctx.lineTo(x + CELL_SIZE, y + CELL_SIZE);
+					ctx.stroke();
+				}
+				if (blackBorders.bottom) {
+					ctx.beginPath();
+					ctx.moveTo(x, y + CELL_SIZE);
+					ctx.lineTo(x + CELL_SIZE, y + CELL_SIZE);
+					ctx.stroke();
+				}
+				if (blackBorders.left) {
+					ctx.beginPath();
+					ctx.moveTo(x, y);
+					ctx.lineTo(x, y + CELL_SIZE);
+					ctx.stroke();
+				}
+			}
 		}
 	}
 

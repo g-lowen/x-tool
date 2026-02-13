@@ -161,6 +161,20 @@ export function CrosswordGrid({
 		grid.customizeCell(row, col, { hasRedBorder: !hasRedBorder });
 	};
 
+	const handleToggleBlackBorder = (
+		row: number,
+		col: number,
+		side: "top" | "right" | "bottom" | "left",
+	) => {
+		const cell = grid.cells[row][col];
+		const currentBorders = cell.customization?.blackBorders ?? {};
+		const newBorders = {
+			...currentBorders,
+			[side]: !currentBorders[side],
+		};
+		grid.customizeCell(row, col, { blackBorders: newBorders });
+	};
+
 	return (
 		<>
 			<style>
@@ -275,6 +289,13 @@ export function CrosswordGrid({
 								handleToggleRedBorder(
 									customizationMenu.row,
 									customizationMenu.col,
+								)
+							}
+							onToggleBlackBorder={(side) =>
+								handleToggleBlackBorder(
+									customizationMenu.row,
+									customizationMenu.col,
+									side,
 								)
 							}
 							onClose={() => setCustomizationMenu(null)}

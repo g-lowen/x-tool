@@ -55,7 +55,16 @@ export function useCrosswordGrid(initialRows: number, initialCols: number) {
 	const customizeCell = (
 		rowIndex: number,
 		colIndex: number,
-		customization: Partial<{ isBlack: boolean; hasRedBorder: boolean }>,
+		customization: Partial<{
+			isBlack: boolean;
+			hasRedBorder: boolean;
+			blackBorders: {
+				top?: boolean;
+				right?: boolean;
+				bottom?: boolean;
+				left?: boolean;
+			};
+		}>,
 	) => {
 		setCells((prev) => {
 			const newCells = prev.map((row) => row.map((cell) => ({ ...cell })));
@@ -74,6 +83,14 @@ export function useCrosswordGrid(initialRows: number, initialCols: number) {
 				cell.customization = {
 					...cell.customization,
 					hasRedBorder: customization.hasRedBorder,
+				};
+			}
+
+			// Handle black borders
+			if (customization.blackBorders !== undefined) {
+				cell.customization = {
+					...cell.customization,
+					blackBorders: customization.blackBorders,
 				};
 			}
 
