@@ -99,8 +99,6 @@ export async function generateStepImages(
 		// Add a small delay between downloads to avoid browser blocking
 		await new Promise((resolve) => setTimeout(resolve, 150));
 	}
-
-	alert(`Successfully generated ${words.length + 1} step images!`);
 }
 
 /**
