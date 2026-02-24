@@ -22,8 +22,8 @@ import {
 } from "./crossword/utils";
 
 export function CrosswordGrid({
-	initialRows = 15,
-	initialCols = 15,
+	initialRows = 30,
+	initialCols = 40,
 }: CrosswordGridProps) {
 	const grid = useCrosswordGrid(initialRows, initialCols);
 	const wordManager = useCrosswordWords({
