@@ -25,7 +25,8 @@ export function useCrosswordWords({
 		direction: Direction,
 	) => {
 		// Keep spaces but convert to uppercase and remove other non-letter chars except spaces
-		const processed = text.toUpperCase().replace(/[^A-Z ]/g, "");
+		// Uses Unicode property escape to allow letters from any language (å, ä, ö, etc.)
+		const processed = text.toUpperCase().replace(/[^\p{L} ]/gu, "");
 		const wordId = `word-${Date.now()}`;
 		const newWord: Word = {
 			id: wordId,
