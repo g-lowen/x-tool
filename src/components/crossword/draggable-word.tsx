@@ -111,52 +111,71 @@ export function DraggableWord({
 					isSelected && clickedLetterIndex === idx && !isLastLetter;
 
 				// Get the correct arrow path based on direction change
-				const getBendArrow = () => {
+				const getBendArrow = (): {
+					arrow: React.ReactNode;
+					position: "top-right" | "bottom-left";
+				} | null => {
 					if (!bendAtLetter) return null;
 
 					const fromDirection = getDirectionBeforeBend(idx);
 					const toDirection = bendAtLetter.direction;
 
-					// From horizontal to vertical
+					// From horizontal to vertical - arrow at top right
 					if (fromDirection === "horizontal" && toDirection === "vertical") {
-						return (
-							<span
-								className="text-blue-600 font-bold text-sm"
-								title="Bend from horizontal to vertical"
-							>
-								⤵
-							</span>
-						);
+						return {
+							arrow: (
+								<span
+									className="text-blue-600 font-bold text-sm"
+									title="Bend from horizontal to vertical"
+								>
+									⤵
+								</span>
+							),
+							position: "top-right",
+						};
 					}
-					// From vertical to horizontal
+					// From vertical to horizontal - arrow at bottom left
 					if (fromDirection === "vertical" && toDirection === "horizontal") {
-						return (
-							<span
-								className="text-blue-600 font-bold text-sm"
-								title="Bend from vertical to horizontal"
-							>
-								↴
-							</span>
-						);
+						return {
+							arrow: (
+								<span
+									className="text-blue-600 font-bold text-sm"
+									title="Bend from vertical to horizontal"
+								>
+									↳
+								</span>
+							),
+							position: "bottom-left",
+						};
 					}
 
-					// Default to straight arrow if no direction change
-					return toDirection === "horizontal" ? (
-						<span
-							className="text-blue-600 font-bold text-sm"
-							title="Horizontal direction"
-						>
-							→
-						</span>
-					) : (
-						<span
-							className="text-blue-600 font-bold text-sm"
-							title="Vertical direction"
-						>
-							↓
-						</span>
-					);
+					// Default to straight arrow if no direction change (shouldn't happen normally)
+					return toDirection === "horizontal"
+						? {
+								arrow: (
+									<span
+										className="text-blue-600 font-bold text-sm"
+										title="Horizontal direction"
+									>
+										→
+									</span>
+								),
+								position: "top-right",
+							}
+						: {
+								arrow: (
+									<span
+										className="text-blue-600 font-bold text-sm"
+										title="Vertical direction"
+									>
+										↓
+									</span>
+								),
+								position: "top-right",
+							};
 				};
+
+				const bendArrowData = getBendArrow();
 
 				return (
 					<div
@@ -215,15 +234,16 @@ export function DraggableWord({
 						)}
 
 						{/* Arrow indicator for bend direction */}
-						{bendAtLetter && (
+						{bendArrowData && (
 							<div
 								className="absolute pointer-events-none z-10 print-show-arrows"
-								style={{
-									top: "1px",
-									right: "2px",
-								}}
+								style={
+									bendArrowData.position === "top-right"
+										? { top: "1px", right: "2px" }
+										: { bottom: "1px", left: "2px" }
+								}
 							>
-								{getBendArrow()}
+								{bendArrowData.arrow}
 							</div>
 						)}
 

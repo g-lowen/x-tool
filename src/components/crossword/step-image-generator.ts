@@ -212,10 +212,9 @@ function renderGridToCanvas(
 		}
 	}
 
-	// Draw bend arrows for words up to current step
-	if (currentStep > 0) {
-		for (let i = 0; i < currentStep; i++) {
-			const word = words[i];
+	// Draw bend arrows for all words (structure should be visible even on blank image)
+	for (const word of words) {
+		if (word.bends && word.bends.length > 0) {
 			const positions = calculateWordPositions(word);
 
 			for (const pos of positions) {
@@ -231,30 +230,49 @@ function renderGridToCanvas(
 						// Get direction before bend
 						const fromDirection = getDirectionBeforeBend(word, pos.index);
 
-						// Draw arrow
+						// Draw arrow with position based on bend type
 						ctx.fillStyle = "#0066cc";
 						ctx.font = "bold 16px Arial";
-						ctx.textAlign = "right";
-						ctx.textBaseline = "top";
 
 						let arrowChar = "";
+						let arrowX: number;
+						let arrowY: number;
+
 						if (
 							fromDirection === "horizontal" &&
 							bend.direction === "vertical"
 						) {
+							// ⤵ at top right
 							arrowChar = "⤵";
+							ctx.textAlign = "right";
+							ctx.textBaseline = "top";
+							arrowX = x + CELL_SIZE - 3;
+							arrowY = y + 1;
 						} else if (
 							fromDirection === "vertical" &&
 							bend.direction === "horizontal"
 						) {
-							arrowChar = "↴";
+							// ↳ at bottom left
+							arrowChar = "↳";
+							ctx.textAlign = "left";
+							ctx.textBaseline = "bottom";
+							arrowX = x + 3;
+							arrowY = y + CELL_SIZE - 1;
 						} else if (bend.direction === "horizontal") {
 							arrowChar = "→";
+							ctx.textAlign = "right";
+							ctx.textBaseline = "top";
+							arrowX = x + CELL_SIZE - 3;
+							arrowY = y + 1;
 						} else {
 							arrowChar = "↓";
+							ctx.textAlign = "right";
+							ctx.textBaseline = "top";
+							arrowX = x + CELL_SIZE - 3;
+							arrowY = y + 1;
 						}
 
-						ctx.fillText(arrowChar, x + CELL_SIZE - 3, y + 1);
+						ctx.fillText(arrowChar, arrowX, arrowY);
 					}
 				}
 			}
