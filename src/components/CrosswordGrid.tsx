@@ -234,7 +234,10 @@ export function CrosswordGrid({
 				onDragEnd={handleDragEnd}
 				modifiers={[snapToGridModifier]}
 			>
-				<div className="flex gap-8 p-8" onClick={handleBackgroundClick}>
+				<div
+					className="flex flex-col lg:flex-row gap-4 lg:gap-8 p-4 lg:p-8"
+					onClick={handleBackgroundClick}
+				>
 					<div className="no-print fixed top-4 right-4 flex gap-2 z-50">
 						<button
 							type="button"
@@ -252,7 +255,10 @@ export function CrosswordGrid({
 						</button>
 					</div>
 
-					<div className="no-print" onClick={(e) => e.stopPropagation()}>
+					<div
+						className="no-print w-full lg:w-auto"
+						onClick={(e) => e.stopPropagation()}
+					>
 						<ControlPanel
 							direction={direction}
 							onDirectionChange={setDirection}
@@ -271,29 +277,31 @@ export function CrosswordGrid({
 						/>
 					</div>
 
-					<GridDisplay
-						rows={grid.rows}
-						cols={grid.cols}
-						cells={grid.cells}
-						selectedCell={grid.selectedCell}
-						onCellClick={grid.handleCellClick}
-						draggingWordId={draggingWordId}
-						onCellContextMenu={(row, col, e) =>
-							handleCellContextMenu(row, col, e)
-						}
-						words={wordManager.words}
-						selectedWordId={wordManager.selectedWord}
-						onSelectWord={(wordId) => {
-							// Toggle selection: if already selected, deselect it
-							if (wordManager.selectedWord === wordId) {
-								wordManager.setSelectedWord(null);
-							} else {
-								wordManager.setSelectedWord(wordId);
+					<div className="w-full min-w-0">
+						<GridDisplay
+							rows={grid.rows}
+							cols={grid.cols}
+							cells={grid.cells}
+							selectedCell={grid.selectedCell}
+							onCellClick={grid.handleCellClick}
+							draggingWordId={draggingWordId}
+							onCellContextMenu={(row, col, e) =>
+								handleCellContextMenu(row, col, e)
 							}
-						}}
-						onAddBend={wordManager.addBend}
-						onRemoveBend={wordManager.removeBend}
-					/>
+							words={wordManager.words}
+							selectedWordId={wordManager.selectedWord}
+							onSelectWord={(wordId) => {
+								// Toggle selection: if already selected, deselect it
+								if (wordManager.selectedWord === wordId) {
+									wordManager.setSelectedWord(null);
+								} else {
+									wordManager.setSelectedWord(wordId);
+								}
+							}}
+							onAddBend={wordManager.addBend}
+							onRemoveBend={wordManager.removeBend}
+						/>
+					</div>
 
 					{customizationMenu && (
 						<CellCustomizationMenu

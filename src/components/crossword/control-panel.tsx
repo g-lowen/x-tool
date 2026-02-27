@@ -37,7 +37,7 @@ export function ControlPanel({
 	onGenerateHighlightImages,
 }: ControlPanelProps) {
 	return (
-		<div className="flex flex-col gap-4 w-80">
+		<div className="flex flex-col gap-4 w-full lg:w-80">
 			<div className="bg-white p-4 rounded-lg shadow">
 				<h2 className="font-bold text-lg mb-3">Add Word</h2>
 				<div className="space-y-3">
