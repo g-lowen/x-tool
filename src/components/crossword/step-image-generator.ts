@@ -21,54 +21,13 @@ export async function generateStepImages(
 	}
 
 	for (let step = 0; step <= words.length; step++) {
-		// Create cells based on original cells (to preserve customizations)
-		const cells: Cell[][] = Array.from({ length: rows }, (_, row) =>
-			Array.from({ length: cols }, (_, col) => ({
-				value: "",
-				isBlack: originalCells[row][col].isBlack,
-				customization: originalCells[row][col].customization,
-			})),
+		const { cells, willHaveContent } = buildCellsForExport(
+			rows,
+			cols,
+			words,
+			originalCells,
+			step,
 		);
-
-		// Track which cells will eventually have content
-		const willHaveContent: boolean[][] = Array.from({ length: rows }, () =>
-			Array.from({ length: cols }, () => false),
-		);
-
-		// First pass: Mark all cells that will eventually have content (from all words)
-		for (const word of words) {
-			const positions = calculateWordPositions(word);
-			for (const pos of positions) {
-				if (pos.row >= 0 && pos.row < rows && pos.col >= 0 && pos.col < cols) {
-					willHaveContent[pos.row][pos.col] = true;
-					if (pos.char === " ") {
-						cells[pos.row][pos.col].isBlack = true;
-					}
-				}
-			}
-		}
-
-		// Second pass: Fill in letters for words up to current step (skip for step 0)
-		if (step > 0) {
-			for (let i = 0; i < step; i++) {
-				const word = words[i];
-				const positions = calculateWordPositions(word);
-
-				for (const pos of positions) {
-					if (
-						pos.row >= 0 &&
-						pos.row < rows &&
-						pos.col >= 0 &&
-						pos.col < cols
-					) {
-						const char = pos.char;
-						if (char !== " " && !cells[pos.row][pos.col].isBlack) {
-							cells[pos.row][pos.col].value = char;
-						}
-					}
-				}
-			}
-		}
 
 		// Render to canvas
 		const canvas = renderGridToCanvas(
@@ -102,6 +61,124 @@ export async function generateStepImages(
 }
 
 /**
+ * Generates one image per word where the active word's cells are highlighted in red.
+ * All words remain unsolved so only the active word outline is shown.
+ */
+export async function generateWordHighlightImages(
+	rows: number,
+	cols: number,
+	words: Word[],
+	originalCells: Cell[][],
+): Promise<void> {
+	if (words.length === 0) {
+		alert("No words to generate images for!");
+		return;
+	}
+
+	for (let wordIndex = 0; wordIndex < words.length; wordIndex++) {
+		const { cells, willHaveContent } = buildCellsForExport(
+			rows,
+			cols,
+			words,
+			originalCells,
+			0,
+		);
+
+		const highlightedCellKeys = new Set<string>();
+		const positions = calculateWordPositions(words[wordIndex]);
+		for (const pos of positions) {
+			if (
+				pos.char !== " " &&
+				pos.row >= 0 &&
+				pos.row < rows &&
+				pos.col >= 0 &&
+				pos.col < cols
+			) {
+				highlightedCellKeys.add(getCellKey(pos.row, pos.col));
+			}
+		}
+
+		const canvas = renderGridToCanvas(
+			cells,
+			willHaveContent,
+			rows,
+			cols,
+			words,
+			wordIndex,
+			highlightedCellKeys,
+		);
+
+		canvas.toBlob((blob) => {
+			if (blob) {
+				const url = URL.createObjectURL(blob);
+				const link = document.createElement("a");
+				link.href = url;
+				const filename = `crossword-highlight-${(wordIndex + 1).toString().padStart(2, "0")}-${words[wordIndex].text}.png`;
+				link.download = filename;
+				link.click();
+				URL.revokeObjectURL(url);
+			}
+		});
+
+		await new Promise((resolve) => setTimeout(resolve, 150));
+	}
+}
+
+function buildCellsForExport(
+	rows: number,
+	cols: number,
+	words: Word[],
+	originalCells: Cell[][],
+	solvedWordCount: number,
+): { cells: Cell[][]; willHaveContent: boolean[][] } {
+	// Create cells based on original cells (to preserve customizations)
+	const cells: Cell[][] = Array.from({ length: rows }, (_, row) =>
+		Array.from({ length: cols }, (_, col) => ({
+			value: "",
+			isBlack: originalCells[row][col].isBlack,
+			customization: originalCells[row][col].customization,
+		})),
+	);
+
+	// Track which cells will eventually have content
+	const willHaveContent: boolean[][] = Array.from({ length: rows }, () =>
+		Array.from({ length: cols }, () => false),
+	);
+
+	// First pass: Mark all cells that will eventually have content (from all words)
+	for (const word of words) {
+		const positions = calculateWordPositions(word);
+		for (const pos of positions) {
+			if (pos.row >= 0 && pos.row < rows && pos.col >= 0 && pos.col < cols) {
+				willHaveContent[pos.row][pos.col] = true;
+				if (pos.char === " ") {
+					cells[pos.row][pos.col].isBlack = true;
+				}
+			}
+		}
+	}
+
+	// Second pass: Fill in letters for words up to solvedWordCount
+	if (solvedWordCount > 0) {
+		for (let i = 0; i < solvedWordCount; i++) {
+			const word = words[i];
+			const positions = calculateWordPositions(word);
+
+			for (const pos of positions) {
+				if (pos.row >= 0 && pos.row < rows && pos.col >= 0 && pos.col < cols) {
+					const char = pos.char;
+					if (char !== " " && !cells[pos.row][pos.col].isBlack) {
+						cells[pos.row][pos.col].value = char;
+					}
+				}
+			}
+		}
+	}
+
+	return { cells, willHaveContent };
+}
+
+/**
  * Renders the grid to a canvas element
  */
 function renderGridToCanvas(
@@ -110,7 +187,8 @@ function renderGridToCanvas(
 	rows: number,
 	cols: number,
 	words: Word[] = [],
-	currentStep: number = 0,
+	_currentStep: number = 0,
+	highlightedCellKeys: Set<string> = new Set(),
 ): HTMLCanvasElement {
 	const totalWidth =
 		cols * (CELL_SIZE + GRID_GAP) + GRID_GAP + BORDER_WIDTH * 2;
@@ -212,6 +290,8 @@ function renderGridToCanvas(
 		}
 	}
 
+	drawHighlightedPerimeter(ctx, highlightedCellKeys);
+
 	// Draw bend arrows for all words (structure should be visible even on blank image)
 	for (const word of words) {
 		if (word.bends && word.bends.length > 0) {
@@ -295,4 +375,57 @@ function getDirectionBeforeBend(
 		return lastBend.direction;
 	}
 	return word.direction;
+}
+
+function getCellKey(row: number, col: number): string {
+	return `${row}-${col}`;
+}
+
+function drawHighlightedPerimeter(
+	ctx: CanvasRenderingContext2D,
+	highlightedCellKeys: Set<string>,
+): void {
+	if (highlightedCellKeys.size === 0) {
+		return;
+	}
+
+	ctx.strokeStyle = "#dc2626";
+	ctx.lineWidth = 4;
+	ctx.lineCap = "butt";
+
+	for (const key of highlightedCellKeys) {
+		const [rowText, colText] = key.split("-");
+		const row = Number(rowText);
+		const col = Number(colText);
+		const x = BORDER_WIDTH + col * (CELL_SIZE + GRID_GAP) + GRID_GAP;
+		const y = BORDER_WIDTH + row * (CELL_SIZE + GRID_GAP) + GRID_GAP;
+
+		if (!highlightedCellKeys.has(getCellKey(row - 1, col))) {
+			ctx.beginPath();
+			ctx.moveTo(x, y);
+			ctx.lineTo(x + CELL_SIZE, y);
+			ctx.stroke();
+		}
+
+		if (!highlightedCellKeys.has(getCellKey(row, col + 1))) {
+			ctx.beginPath();
+			ctx.moveTo(x + CELL_SIZE, y);
+			ctx.lineTo(x + CELL_SIZE, y + CELL_SIZE);
+			ctx.stroke();
+		}
+
+		if (!highlightedCellKeys.has(getCellKey(row + 1, col))) {
+			ctx.beginPath();
+			ctx.moveTo(x, y + CELL_SIZE);
+			ctx.lineTo(x + CELL_SIZE, y + CELL_SIZE);
+			ctx.stroke();
+		}
+
+		if (!highlightedCellKeys.has(getCellKey(row, col - 1))) {
+			ctx.beginPath();
+			ctx.moveTo(x, y);
+			ctx.lineTo(x, y + CELL_SIZE);
+			ctx.stroke();
+		}
+	}
 }

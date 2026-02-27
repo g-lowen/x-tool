@@ -17,6 +17,7 @@ interface ControlPanelProps {
 	onMoveWordUp: (wordId: string) => void;
 	onMoveWordDown: (wordId: string) => void;
 	onGenerateStepImages: () => void;
+	onGenerateHighlightImages: () => void;
 }
 
 export function ControlPanel({
@@ -33,6 +34,7 @@ export function ControlPanel({
 	onMoveWordUp,
 	onMoveWordDown,
 	onGenerateStepImages,
+	onGenerateHighlightImages,
 }: ControlPanelProps) {
 	return (
 		<div className="flex flex-col gap-4 w-80">
@@ -78,6 +80,18 @@ export function ControlPanel({
 				</button>
 				<p className="text-xs text-gray-500 mt-2">
 					Downloads {words.length + 1} images showing progressive solutions
+				</p>
+
+				<button
+					type="button"
+					onClick={onGenerateHighlightImages}
+					disabled={words.length === 0}
+					className="w-full mt-3 px-4 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 font-semibold disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+				>
+					🎯 Generate Highlight Images ({words.length})
+				</button>
+				<p className="text-xs text-gray-500 mt-2">
+					Downloads {words.length} images with one active word highlighted
 				</p>
 			</div>
 
