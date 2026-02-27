@@ -290,6 +290,16 @@ function renderGridToCanvas(
 		}
 	}
 
+	const wordMembership = buildWordMembershipMap(rows, cols, words);
+	drawNeighborWordSeparators(
+		ctx,
+		cells,
+		willHaveContent,
+		rows,
+		cols,
+		wordMembership,
+	);
+
 	drawHighlightedPerimeter(ctx, highlightedCellKeys);
 
 	// Draw bend arrows for all words (structure should be visible even on blank image)
@@ -428,4 +438,126 @@ function drawHighlightedPerimeter(
 			ctx.stroke();
 		}
 	}
+}
+
+function buildWordMembershipMap(
+	rows: number,
+	cols: number,
+	words: Word[],
+): Map<string, Set<string>> {
+	const membership = new Map<string, Set<string>>();
+
+	for (const word of words) {
+		const positions = calculateWordPositions(word);
+		for (const pos of positions) {
+			if (
+				pos.char === " " ||
+				pos.row < 0 ||
+				pos.row >= rows ||
+				pos.col < 0 ||
+				pos.col >= cols
+			) {
+				continue;
+			}
+
+			const key = getCellKey(pos.row, pos.col);
+			if (!membership.has(key)) {
+				membership.set(key, new Set<string>());
+			}
+			membership.get(key)?.add(word.id);
+		}
+	}
+
+	return membership;
+}
+
+function drawNeighborWordSeparators(
+	ctx: CanvasRenderingContext2D,
+	cells: Cell[][],
+	willHaveContent: boolean[][],
+	rows: number,
+	cols: number,
+	wordMembership: Map<string, Set<string>>,
+): void {
+	ctx.strokeStyle = "#111111";
+	ctx.lineWidth = 6;
+	ctx.lineCap = "butt";
+
+	for (let row = 0; row < rows; row++) {
+		for (let col = 0; col < cols; col++) {
+			if (!willHaveContent[row][col] || cells[row][col].isBlack) {
+				continue;
+			}
+
+			const x = BORDER_WIDTH + col * (CELL_SIZE + GRID_GAP) + GRID_GAP;
+			const y = BORDER_WIDTH + row * (CELL_SIZE + GRID_GAP) + GRID_GAP;
+
+			if (
+				col + 1 < cols &&
+				shouldDrawWordSeparator(
+					row,
+					col,
+					row,
+					col + 1,
+					cells,
+					willHaveContent,
+					wordMembership,
+				)
+			) {
+				const separatorX = x + CELL_SIZE;
+				ctx.beginPath();
+				ctx.moveTo(separatorX, y);
+				ctx.lineTo(separatorX, y + CELL_SIZE);
+				ctx.stroke();
+			}
+
+			if (
+				row + 1 < rows &&
+				shouldDrawWordSeparator(
+					row,
+					col,
+					row + 1,
+					col,
+					cells,
+					willHaveContent,
+					wordMembership,
+				)
+			) {
+				const separatorY = y + CELL_SIZE;
+				ctx.beginPath();
+				ctx.moveTo(x, separatorY);
+				ctx.lineTo(x + CELL_SIZE, separatorY);
+				ctx.stroke();
+			}
+		}
+	}
+}
+
+function shouldDrawWordSeparator(
+	rowA: number,
+	colA: number,
+	rowB: number,
+	colB: number,
+	cells: Cell[][],
+	willHaveContent: boolean[][],
+	wordMembership: Map<string, Set<string>>,
+): boolean {
+	if (!willHaveContent[rowB][colB] || cells[rowB][colB].isBlack) {
+		return false;
+	}
+
+	const wordsA = wordMembership.get(getCellKey(rowA, colA));
+	const wordsB = wordMembership.get(getCellKey(rowB, colB));
+	if (!wordsA || !wordsB) {
+		return false;
+	}
+
+	for (const wordId of wordsA) {
+		if (wordsB.has(wordId)) {
+			// Adjacent cells are part of at least one shared word path, so no separator.
+			return false;
+		}
+	}
+
+	return true;
 }
