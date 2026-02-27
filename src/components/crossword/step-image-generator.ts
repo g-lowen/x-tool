@@ -5,6 +5,13 @@ const CELL_SIZE = 40;
 const BORDER_WIDTH = 2;
 const GRID_GAP = 1;
 
+interface ExportViewport {
+	minRow: number;
+	maxRow: number;
+	minCol: number;
+	maxCol: number;
+}
+
 /**
  * Generates and downloads step-by-step solution images
  * Each image shows the grid with progressively more words filled in
@@ -190,10 +197,13 @@ function renderGridToCanvas(
 	_currentStep: number = 0,
 	highlightedCellKeys: Set<string> = new Set(),
 ): HTMLCanvasElement {
+	const viewport = calculateExportViewport(willHaveContent, rows, cols);
+	const visibleCols = viewport.maxCol - viewport.minCol + 1;
+	const visibleRows = viewport.maxRow - viewport.minRow + 1;
 	const totalWidth =
-		cols * (CELL_SIZE + GRID_GAP) + GRID_GAP + BORDER_WIDTH * 2;
+		visibleCols * (CELL_SIZE + GRID_GAP) + GRID_GAP + BORDER_WIDTH * 2;
 	const totalHeight =
-		rows * (CELL_SIZE + GRID_GAP) + GRID_GAP + BORDER_WIDTH * 2;
+		visibleRows * (CELL_SIZE + GRID_GAP) + GRID_GAP + BORDER_WIDTH * 2;
 
 	const canvas = document.createElement("canvas");
 	canvas.width = totalWidth;
@@ -209,8 +219,8 @@ function renderGridToCanvas(
 	ctx.fillRect(0, 0, totalWidth, totalHeight);
 
 	// Draw cells that will have content
-	for (let row = 0; row < rows; row++) {
-		for (let col = 0; col < cols; col++) {
+	for (let row = viewport.minRow; row <= viewport.maxRow; row++) {
+		for (let col = viewport.minCol; col <= viewport.maxCol; col++) {
 			const cell = cells[row][col];
 
 			// Skip cells that will never have content
@@ -218,8 +228,8 @@ function renderGridToCanvas(
 				continue;
 			}
 
-			const x = BORDER_WIDTH + col * (CELL_SIZE + GRID_GAP) + GRID_GAP;
-			const y = BORDER_WIDTH + row * (CELL_SIZE + GRID_GAP) + GRID_GAP;
+			const x = getCellCanvasX(col, viewport);
+			const y = getCellCanvasY(row, viewport);
 
 			if (cell.isBlack) {
 				// Render black cells (spaces in words)
@@ -298,9 +308,10 @@ function renderGridToCanvas(
 		rows,
 		cols,
 		wordMembership,
+		viewport,
 	);
 
-	drawHighlightedPerimeter(ctx, highlightedCellKeys);
+	drawHighlightedPerimeter(ctx, highlightedCellKeys, viewport);
 
 	// Draw bend arrows for all words (structure should be visible even on blank image)
 	for (const word of words) {
@@ -308,14 +319,17 @@ function renderGridToCanvas(
 			const positions = calculateWordPositions(word);
 
 			for (const pos of positions) {
-				if (pos.row >= 0 && pos.row < rows && pos.col >= 0 && pos.col < cols) {
+				if (
+					pos.row >= viewport.minRow &&
+					pos.row <= viewport.maxRow &&
+					pos.col >= viewport.minCol &&
+					pos.col <= viewport.maxCol
+				) {
 					// Check if there's a bend at this position
 					const bend = word.bends?.find((b) => b.index === pos.index);
 					if (bend) {
-						const x =
-							BORDER_WIDTH + pos.col * (CELL_SIZE + GRID_GAP) + GRID_GAP;
-						const y =
-							BORDER_WIDTH + pos.row * (CELL_SIZE + GRID_GAP) + GRID_GAP;
+						const x = getCellCanvasX(pos.col, viewport);
+						const y = getCellCanvasY(pos.row, viewport);
 
 						// Get direction before bend
 						const fromDirection = getDirectionBeforeBend(word, pos.index);
@@ -394,6 +408,7 @@ function getCellKey(row: number, col: number): string {
 function drawHighlightedPerimeter(
 	ctx: CanvasRenderingContext2D,
 	highlightedCellKeys: Set<string>,
+	viewport: ExportViewport,
 ): void {
 	if (highlightedCellKeys.size === 0) {
 		return;
@@ -407,8 +422,17 @@ function drawHighlightedPerimeter(
 		const [rowText, colText] = key.split("-");
 		const row = Number(rowText);
 		const col = Number(colText);
-		const x = BORDER_WIDTH + col * (CELL_SIZE + GRID_GAP) + GRID_GAP;
-		const y = BORDER_WIDTH + row * (CELL_SIZE + GRID_GAP) + GRID_GAP;
+		if (
+			row < viewport.minRow ||
+			row > viewport.maxRow ||
+			col < viewport.minCol ||
+			col > viewport.maxCol
+		) {
+			continue;
+		}
+
+		const x = getCellCanvasX(col, viewport);
+		const y = getCellCanvasY(row, viewport);
 
 		if (!highlightedCellKeys.has(getCellKey(row - 1, col))) {
 			ctx.beginPath();
@@ -478,19 +502,20 @@ function drawNeighborWordSeparators(
 	rows: number,
 	cols: number,
 	wordMembership: Map<string, Set<string>>,
+	viewport: ExportViewport,
 ): void {
 	ctx.strokeStyle = "#111111";
 	ctx.lineWidth = 6;
 	ctx.lineCap = "butt";
 
-	for (let row = 0; row < rows; row++) {
-		for (let col = 0; col < cols; col++) {
+	for (let row = viewport.minRow; row <= viewport.maxRow; row++) {
+		for (let col = viewport.minCol; col <= viewport.maxCol; col++) {
 			if (!willHaveContent[row][col] || cells[row][col].isBlack) {
 				continue;
 			}
 
-			const x = BORDER_WIDTH + col * (CELL_SIZE + GRID_GAP) + GRID_GAP;
-			const y = BORDER_WIDTH + row * (CELL_SIZE + GRID_GAP) + GRID_GAP;
+			const x = getCellCanvasX(col, viewport);
+			const y = getCellCanvasY(row, viewport);
 
 			if (
 				col + 1 < cols &&
@@ -560,4 +585,51 @@ function shouldDrawWordSeparator(
 	}
 
 	return true;
+}
+
+function calculateExportViewport(
+	willHaveContent: boolean[][],
+	rows: number,
+	cols: number,
+): ExportViewport {
+	let minRow = rows;
+	let maxRow = -1;
+	let minCol = cols;
+	let maxCol = -1;
+
+	for (let row = 0; row < rows; row++) {
+		for (let col = 0; col < cols; col++) {
+			if (!willHaveContent[row][col]) {
+				continue;
+			}
+
+			if (row < minRow) minRow = row;
+			if (row > maxRow) maxRow = row;
+			if (col < minCol) minCol = col;
+			if (col > maxCol) maxCol = col;
+		}
+	}
+
+	if (maxRow === -1 || maxCol === -1) {
+		return {
+			minRow: 0,
+			maxRow: Math.max(0, rows - 1),
+			minCol: 0,
+			maxCol: Math.max(0, cols - 1),
+		};
+	}
+
+	return { minRow, maxRow, minCol, maxCol };
+}
+
+function getCellCanvasX(col: number, viewport: ExportViewport): number {
+	return (
+		BORDER_WIDTH + (col - viewport.minCol) * (CELL_SIZE + GRID_GAP) + GRID_GAP
+	);
+}
+
+function getCellCanvasY(row: number, viewport: ExportViewport): number {
+	return (
+		BORDER_WIDTH + (row - viewport.minRow) * (CELL_SIZE + GRID_GAP) + GRID_GAP
+	);
 }
