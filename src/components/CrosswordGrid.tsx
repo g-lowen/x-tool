@@ -104,20 +104,6 @@ export function CrosswordGrid({
 		setDraggingWordId(event.active.id as string);
 	};
 
-	const _handlePrint = () => {
-		window.print();
-	};
-
-	const handlePrintBlank = () => {
-		setPrintWithSolution(false);
-		setTimeout(() => window.print(), 0);
-	};
-
-	const handlePrintSolution = () => {
-		setPrintWithSolution(true);
-		setTimeout(() => window.print(), 0);
-	};
-
 	const handleGenerateStepImages = async () => {
 		if (wordManager.words.length === 0) {
 			alert("Add some words first!");
@@ -235,49 +221,41 @@ export function CrosswordGrid({
 				modifiers={[snapToGridModifier]}
 			>
 				<div
-					className="flex flex-col lg:flex-row gap-4 lg:gap-8 p-4 lg:p-8"
+					className="flex flex-col lg:flex-row gap-4 p-4 h-full overflow-hidden"
 					onClick={handleBackgroundClick}
 				>
-					<div className="no-print fixed top-4 right-4 flex gap-2 z-50">
-						<button
-							type="button"
-							onClick={handlePrintBlank}
-							className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-semibold shadow-lg"
-						>
-							🖨️ Print Blank Puzzle
-						</button>
-						<button
-							type="button"
-							onClick={handlePrintSolution}
-							className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-semibold shadow-lg"
-						>
-							✓ Print Solution
-						</button>
-					</div>
-
-					<div
-						className="no-print w-full lg:w-auto"
+					<details
+						open
+						className="no-print shrink-0 lg:[&[open]]:w-80 flex flex-col min-h-0 max-h-full overflow-hidden"
 						onClick={(e) => e.stopPropagation()}
 					>
-						<ControlPanel
-							direction={direction}
-							onDirectionChange={setDirection}
-							inputText={inputText}
-							onInputTextChange={setInputText}
-							onPlaceWord={handlePlaceWord}
-							selectedCell={grid.selectedCell}
-							words={wordManager.words}
-							selectedWordId={wordManager.selectedWord}
-							onSelectWord={wordManager.setSelectedWord}
-							onDeleteWord={handleDeleteWord}
-							onMoveWordUp={wordManager.moveWordUp}
-							onMoveWordDown={wordManager.moveWordDown}
-							onGenerateStepImages={handleGenerateStepImages}
-							onGenerateHighlightImages={handleGenerateHighlightImages}
-						/>
-					</div>
+						<summary className="cursor-pointer list-none mb-4 shrink-0">
+							<div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold shadow-lg">
+								<span className="details-marker">▶</span>
+								<span>Control Panel</span>
+							</div>
+						</summary>
+						<div className="overflow-y-auto overflow-x-hidden flex-1 min-h-0">
+							<ControlPanel
+								direction={direction}
+								onDirectionChange={setDirection}
+								inputText={inputText}
+								onInputTextChange={setInputText}
+								onPlaceWord={handlePlaceWord}
+								selectedCell={grid.selectedCell}
+								words={wordManager.words}
+								selectedWordId={wordManager.selectedWord}
+								onSelectWord={wordManager.setSelectedWord}
+								onDeleteWord={handleDeleteWord}
+								onMoveWordUp={wordManager.moveWordUp}
+								onMoveWordDown={wordManager.moveWordDown}
+								onGenerateStepImages={handleGenerateStepImages}
+								onGenerateHighlightImages={handleGenerateHighlightImages}
+							/>
+						</div>
+					</details>
 
-					<div className="w-full min-w-0">
+					<div className="flex-1 min-w-0 min-h-0 overflow-auto">
 						<GridDisplay
 							rows={grid.rows}
 							cols={grid.cols}
