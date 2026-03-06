@@ -47,13 +47,6 @@ export function GridDisplay({
 
 	return (
 		<div className="flex flex-col gap-3">
-			<div className="text-sm text-gray-600 no-print flex items-center justify-between">
-				{rows} × {cols} grid
-				<span className="text-xs text-gray-500 lg:hidden">
-					Scroll to navigate
-				</span>
-			</div>
-
 			<div className="w-full overflow-auto rounded-lg border border-gray-300 bg-white shadow-sm max-w-[calc(100vw-2rem)] max-h-[70vh] print:max-w-none print:max-h-none print:overflow-visible">
 				<div className="relative w-max">
 					<div
